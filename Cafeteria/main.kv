@@ -1,0 +1,545 @@
+WindowManager:
+    MainScreen:
+    AddingScreen:
+    AllPedidos:
+    EditElementsScreen:
+    AddingElementsScreen:
+    ElElementoParaAnyadir:
+    ElElementoParaEditar:
+    ElPedidoParaAnyadir:
+    ElPedidoParaEditar:
+    ListaPedidosEnMesa:
+    AddingMasPedidosAMesaScreen:
+
+<MainScreen>:
+    name: "Main"
+
+    BoxLayout:
+        orientation:"vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "CafeteriaAplication"
+            font_size: 32
+
+        Button:
+            text: "Añadir Pedido"
+            font_size: 32
+            on_release: 
+                app.root.current = "Adding"
+                root.manager.transition.direction = "left"
+
+        Button:
+            text: "Todos los pedidos"
+            font_size: 32
+            on_release: 
+                app.root.current = "Pedidos"
+                root.manager.transition.direction = "left"
+
+        Button:
+            text: "Editar/Añadir Elementos"
+            font_size: 32
+            on_release: 
+                
+                app.root.current = "Elementos"
+                root.manager.transition.direction = "left"
+        
+        Button:
+            text: "Actualizar Ventana"
+            font_size: 32
+            on_release:
+                app.actualizarVentana()
+
+<AddingScreen>:
+    name: "Adding"
+
+    BoxLayout:
+        orientation:"vertical"
+        size: root.width, root.height
+
+        Label:
+            id: resultado
+            text: 'Mesa'
+            size_hint_y: 0.1
+
+        TextInput:
+            id: NumeroMesa
+            multiline: False
+            input_filter: 'int'
+            size_hint_y: 0.1
+
+        ScrollView:
+            GridLayout:
+                id: TodosPedidos
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 3
+                spacing: 40
+                pading: 40
+
+        Button:
+            text: 'Añadir Mesa'
+            size_hint_y: 0.1
+
+            on_release:
+                app.check_number()
+        
+        Button:
+
+            text: 'AñadirPedidos'
+            size_hint_y: 0.1
+
+            on_release:
+                app.root.current = "AnyadirPedidos"
+                root.manager.transition.direction = "left"
+
+        Button:
+            text: "Eliminar todos los pedidos"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release:
+                app.deleteEverythingPedidos()
+                app.root.current = "Main"
+                root.manager.transition.direction = "right"
+
+        Button:
+            text: "Menu Principal"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release: 
+                app.root.current = "Main"
+                root.manager.transition.direction = "right"
+
+<AllPedidos>:
+    name: "Pedidos"
+
+    BoxLayout:
+        orientation:"vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "TodosPedidos"
+            font_size: 32
+
+        ScrollView:
+            GridLayout:
+                id: mesas
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 3
+                spacing: 40
+                pading: 40
+
+        Button:
+            text: "Eliminar todas las Mesas"
+            font_size: 32
+            size_hint_y: 0.2
+            on_release:
+                app.root.current = "Main"
+                app.Eliminar(7,0,0)
+                root.manager.transition.direction = "right"
+
+
+        Button:
+            text: "Menu Principal"
+            font_size: 32
+            size_hint_y: 0.2
+            on_release: 
+                app.root.current = "Main"
+                root.manager.transition.direction = "right"
+
+<EditElementsScreen>:
+    name: "Elementos"
+
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "EditarElementos"
+            size_hint_y: 0.1
+            font_size: 32
+
+        ScrollView:
+            GridLayout:
+                id: Elementos
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 3
+                spacing: 40
+                pading: 40
+
+        Button:
+            text: "AñadirElemento"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release:
+                app.root.current = "ElementoAñadir"
+                root.manager.transition.direciton = "left"
+
+        Button:
+            text: "Eliminar todos los elementos"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release:
+                app.Eliminar(2,0,0)
+
+        Button:
+            text: "Menu Principal"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release: 
+                app.root.current = "Main"
+                root.manager.transition.direction = "right"
+
+<AddingElementsScreen>:
+    name: "AnyadirPedidos"
+
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "Pedidos"
+            font_size: 32
+            size_hint_y: 0.1
+
+        ScrollView:
+            GridLayout:
+                id: pedidos
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 3
+                spacing: 40
+                pading: 40
+
+        Button:
+            text: "Volver"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release: 
+                app.root.current = "Adding"
+                root.manager.transition.direction = "right"
+
+<ElElementoParaAnyadir>:
+    name: "ElementoAñadir"
+
+    BoxLayout:
+
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text:"Imagen"
+            size_hint_y:0.1
+
+        Image:
+            id: SelectedImage
+            source: ""
+
+        Button:
+            id: SelectImage
+            size_hint_y:0.1
+            text: "Select Image"
+            on_release:
+                app.select_image(1)
+
+        Label: 
+            text: "Nombre"
+            size_hint_y:0.1
+
+        TextInput:
+            id: nombreElemento
+            text: "Escribe el nombre del producto"
+            multiline: False
+            size_hint_y:0.1
+
+        Label:
+            text: "Precio"
+            size_hint_y:0.1
+    
+        TextInput:
+            id: precioElemento
+            text: "Escribe el precio del producto"
+            input_filter: "float"
+            multiline: False
+            size_hint_y:0.1
+
+        Button:
+            text: "AñadirElemento"
+            size_hint_y: 0.2
+            on_release:
+                app.guardarElemento()
+                app.restablecer(1)
+                app.root.current = "Elementos"
+                root.manager.transition.direction = "left"
+
+        Button:
+            text: "Volver"
+            size_hint_y: 0.2
+            on_release:
+                app.root.current = "Elementos"
+                root.manager.transition.direction = "left"
+
+
+<ElElementoParaEditar>:
+    name: "ElementoEditar"
+
+    BoxLayout:
+        id: VentanaParaEditar
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text:"Imagen"
+            size_hint_y:0.1
+
+        Image:
+            id: SelectedImage
+            source: ""
+
+        Button:
+            id: SelectImage
+            size_hint_y:0.1
+            text: "Select Image"
+            on_release:
+                app.select_image(2)
+
+        Label: 
+            text: "Nombre"
+            size_hint_y:0.1
+
+            
+        TextInput:
+            id: nombreAEditar
+            text: ""
+            multiline: False
+            size_hint_y:0.1
+
+        Label:
+            text: "Precio"
+            size_hint_y:0.1
+    
+        TextInput:
+            id: precioAEditar
+            text: ""
+            input_filter: "float"
+            multiline: False
+            size_hint_y:0.1
+
+        Label:
+            id: Cantidad1
+            text: "Cantidad"
+            size_hint_y: 0.1
+
+        TextInput:
+            id: Cantidad2
+            text: "Introduce la cantidad"
+            size_hint_y: 0.1
+
+        Label:
+            id:Detalles1
+            text: "Nota"
+            size_hint_y: 0.1
+
+        TextInput:
+            id:Detalles2
+            text: "Introduce un detalle del pedido"
+            size_hint_y: 0.2
+
+        Button:
+            id: EditarElementos
+            text: "EditarElemento"
+            size_hint_y: 0.2
+            on_release:
+                app.root.current = "Elementos"
+                root.manager.transition.direction = "left"
+
+        Button:
+            id: Boton4
+            text: "Eliminar pedido"
+            size_hint_y: 0.1
+
+<ElPedidoParaAnyadir>:
+
+    name: "PedidoAñadir"
+
+    BoxLayout:
+        id: Box
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text:"Imagen"
+            size_hint_y:0.1
+
+        Image:
+            id: SelectedImage
+            source: ""
+
+        Label: 
+            text: "Nombre"
+            halign: 'left'
+            valign: 'middle'
+            size_hint_y: 0.1
+            
+        Label:
+            id: nombreElemento
+            halign: 'left'
+            valign: 'middle'
+            text: ""
+            multiline: False
+            size_hint_y:0.2
+            font_size: 30
+
+        Label:
+            text: "Precio"
+            halign: 'left'
+            valign: 'middle'
+            size_hint_y:0.1
+
+        Label:
+            id: PrecioElemento
+            halign: 'left'
+            valign: 'middle'
+            text: ""
+            size_hint_y: 0.2
+            font_size: 30
+
+        Label:
+            text: "Cantidad"
+            halign: 'left'
+            valign: 'middle'
+            size_hint_y: 0.1
+    
+        TextInput:
+            id: CantidadElemento
+            text: "Escribe la cantidad a desear"
+            input_filter: "int"
+            multiline: False
+            size_hint_y:0.1
+
+        TextInput:
+            id: DetalleACompartir
+            text: "Escribe alguna nota importante"
+            size_hint_y: 0.3
+            font_size:40
+
+        Button:
+            id: EditarPedido
+            text: "AñadirPedido"
+            size_hint_y: 0.2
+            on_release:
+                app.restablecer(2)
+                app.root.current = "AnyadirPedidos"
+                root.manager.transition.direction = "left"
+
+
+        Button:
+            id: Volver2
+            text: "Volver"
+            size_hint_y: 0.2
+            on_release:
+                app.restablecer(2)
+                root.manager.transition.direction = "left"
+
+<ListaPedidosEnMesa>:
+    
+    name: "NumeroMesa"
+
+    BoxLayout:
+
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "Pedidos De La Mesa"
+            halign: 'left'
+            valign: 'middle'
+            size_hint_y: 0.1
+
+
+        ScrollView:
+            GridLayout:
+                id: pedidosDeLaMesa
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 5
+                spacing: 40
+                pading: 40
+
+        TextInput:
+            id: AnyadirExtra
+            text: "Escribe el extra anyadir"
+            input_filter: "float"
+            multiline: False
+            size_hint_y:0.1
+
+        Label:
+            id: totalCantidad
+            text:"El total es: "
+            size_hint_y:0.1
+
+        Button:
+            text:"Calcular el total"
+            size_hint_y:0.1
+            on_release:
+                app.calcularElTotal()
+
+        Button:
+            id: EliminarMesa
+            text: "Eliminar la mesa"
+            size_hint_y:0.1
+            on_release:
+                app.root.current = "Pedidos"
+                root.manager.transition.direction = "left"
+
+        Button:
+            id: AnyadirPedidos
+            text: "Añade mas pedidos"
+            size_hint_y: 0.1
+            on_release:
+                app.root.current = "AnyadirPedidosAMesa"
+
+
+        Button:
+            text:"Volver al principio"
+            size_hint_y:0.1
+            on_release:
+                app.root.current = "Pedidos"
+                root.manager.transition.direction = "left"
+
+<AddingMasPedidosAMesaScreen>:
+    name: "AnyadirPedidosAMesa"
+
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "Pedidos"
+            font_size: 32
+            size_hint_y: 0.1
+
+        ScrollView:
+            GridLayout:
+                id: pedidos
+                height: self.minimum_height
+                size_hint_y: None
+                row_default_height: 200
+                cols: 3
+                spacing: 40
+                pading: 40
+
+        Button:
+            text: "Volver"
+            font_size: 32
+            size_hint_y: 0.1
+            on_release: 
+                app.root.current = "NumeroMesa"
+                root.manager.transition.direction = "right"
