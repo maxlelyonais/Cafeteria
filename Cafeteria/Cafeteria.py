@@ -421,7 +421,9 @@ class MyApp(App):
             Repetido.open()
 
         else:
-            self.insertRowEnPedidos(nombreElemento.text,precioElemento.text , ImagenDirect,cantidad.text,Notas.text)
+            self.insertRowEnPedidos(nombreElemento.text, precioElemento.text, ImagenDirect,
+                                    cantidad.text if cantidad.text.isnumeric() else 1,
+                                    Notas.text)
             
 ## Seleccionar las imagenes que van apareciendo en los selectores
     def select_image(self,number):
@@ -512,7 +514,11 @@ class MyApp(App):
             ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
 
             if self.searchElemento(nombreElemento.text) == []:
-                self.insertRowEnElementos(nombreElemento.text,float(precioElemento.text),ImagenDirect)
+
+                self.insertRowEnElementos(
+                    nombreElemento.text,
+                    float(precioElemento.text) if precioElemento.text.isnumeric() else 0.00,
+                    ImagenDirect)
             else:
                 layout = BoxLayout()
                 Mensaje = Label(text = "Elemento ya repetido")
@@ -583,7 +589,9 @@ class MyApp(App):
             Repetido.dismiss()
         
         if self.searchPedidoEnMesa(numeroMesa,1,nombreElemento.text,0,0,"") == []:
-            self.insertRowParaPedidoEnMesa(numeroMesa,nombreElemento.text,precioElemento.text,ImagenDirect,cantidad.text,Notas.text)
+            self.insertRowParaPedidoEnMesa(numeroMesa,nombreElemento.text,precioElemento.text,ImagenDirect, 
+                                           cantidad.text if cantidad.text.isnumeric() else 1,
+                                           Notas.text)
         else:
             layout = BoxLayout()
             Cerrar = Button(text = "Cerrar")
