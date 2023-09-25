@@ -1,6 +1,12 @@
-import os, pathlib, sys
+import os, pathlib, sys, shutil
 import sqlite3 as sql
 from functools import partial
+
+# --- dotenv module
+# @installation:   pip install python-dotenv
+# @version:        python-dotenv==1.0.0
+# --- 
+from dotenv import load_dotenv
 
 # --- kyvy module
 # @installation:   pip install kivy
@@ -25,9 +31,32 @@ from module.kivyElements import *
 
 
 # Constant Variables ----
+load_dotenv()
 
 # Get the absolute path of the python script directory
 ABS_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve()
+
+MAIN_KV_PATH = os.path.join(ABS_SCRIPT_PATH, 'main.kv')
+
+DDBB_FOLDER_NAME = os.getenv('DATABASE_FOLDER_NAME')
+IMAGE_FOLDER_NAME = os.getenv('IMAGE_FOLDER_NAME')
+CHECK_FOLDER_NAME = os.getenv('CHECK_FOLDER_NAME')
+
+# GET ABSOLUTE PATH OF ALL SUB FOLDERS
+FOLDER_PATH = [
+    os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME),
+    os.path.join(ABS_SCRIPT_PATH, IMAGE_FOLDER_NAME),
+
+    # Last one always check folder
+    os.path.join(ABS_SCRIPT_PATH, CHECK_FOLDER_NAME)
+]
+
+# GET ABSOLUTE PATH OF ALL FILES
+FILE_PATH = [
+    os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('ELEMENT_DB_FILENAME')),
+    os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('TABLELIST_DB_FILENAME')),
+    os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('ORDER_DB_FILENAME')),
+]
 
 
 # Functions
@@ -42,7 +71,7 @@ class MyApp(App):
         self.createTableElementos()
         self.createTablePedidosAuxiliares()
         self.createTableMesa()
-        self.root = Builder.load_file('main.kv')
+        self.root = Builder.load_file(MAIN_KV_PATH)
         self.createContents()
         self.Boton3 = Button(text = "Eliminar Elemento", size_hint_y = 0.1)
         self.BotonVuelta = Button(text = "Volver", size_hint_y = 0.1)
@@ -375,9 +404,7 @@ class MyApp(App):
         cantidad = self.root.get_screen('PedidoAñadir').ids.CantidadElemento
         Notas = self.root.get_screen('PedidoAñadir').ids.DetalleACompartir
 
-        filename = 'Imagenes'
-        ruta1 = os.path.join(ABS_SCRIPT_PATH,filename)
-        ImagenDirect = os.path.join(ABS_SCRIPT_PATH1,os.path.basename(imagen.source))
+        ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
 
         def CerrarVentana(instance):
             Repetido.dismiss()
@@ -439,8 +466,7 @@ class MyApp(App):
             with open(imagen.source,'rb') as source_file:
                 image_data = source_file.read()
 
-            file = 'Imagenes'
-            destination_file_path = os.path.join(ABS_SCRIPT_PATH,file,filename)
+            destination_file_path = os.path.join(FOLDER_PATH[1], filename)
             
 
             with open(destination_file_path,'wb') as destination_file:
@@ -483,8 +509,7 @@ class MyApp(App):
             precioElemento = self.root.get_screen('ElementoAñadir').ids.precioElemento
             imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
 
-            filename = 'Imagenes'
-            ImagenDirect = os.path.join(ABS_SCRIPT_PATH,filename,os.path.basename(imagen.source))
+            ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
 
             if self.searchElemento(nombreElemento.text) == []:
                 self.insertRowEnElementos(nombreElemento.text,float(precioElemento.text),ImagenDirect)
@@ -552,9 +577,7 @@ class MyApp(App):
         Notas = self.root.get_screen('PedidoAñadir').ids.DetalleACompartir
 
 
-        
-        filename = 'Imagenes'
-        ImagenDirect = os.path.join(ABS_SCRIPT_PATH,filename,os.path.basename(imagen.source))
+        ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
 
         def CerrarVentana(instance):
             Repetido.dismiss()
@@ -635,11 +658,8 @@ class MyApp(App):
 
     ##---------------------------------------Treat with Elementos DataBase--------------------------------------------------------
     def createTableElementos(self):
-        
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+
+        conn = sql.connect(FILE_PATH[0])
 
         cursor = conn.cursor()
         cursor.execute(
@@ -655,10 +675,7 @@ class MyApp(App):
 
     def insertRowEnElementos(self,nombreProduct, PrecioProducto, ImagenDireccion):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion = f"INSERT INTO Elementos VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}')"
         cursor.execute(instruccion)
@@ -672,10 +689,7 @@ class MyApp(App):
     ## 4: To read all the information
     def readRowEnElementos(self,number):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
 
         if number == 1:
@@ -694,10 +708,7 @@ class MyApp(App):
 
     def searchElemento(self,nombreProducto):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion = "SELECT * FROM Elementos WHERE NombreProducto LIKE ?"
         cursor.execute(instruccion, ('%'+nombreProducto+'%',))
@@ -710,10 +721,7 @@ class MyApp(App):
     ##2: To update price
     def updateFieldsElementos(self,new_name,new_price,new_imageDirection,old_name,old_price,old_imageDirection):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion1 = f"UPDATE Elementos SET NombreProducto= ? WHERE NombreProducto like ?"
         cursor.execute(instruccion1,(new_name,old_name))
@@ -727,10 +735,7 @@ class MyApp(App):
     ## We delete through the name
     def deleteRowElementos(self,nameOfElement):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion = f"DELETE FROM Elementos WHERE NombreProducto LIKE ?"
         cursor.execute(instruccion, ('%'+nameOfElement+'%',))
@@ -739,10 +744,7 @@ class MyApp(App):
 
     def deleteEverythingElementos(self):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'Elementos.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion = f"DELETE FROM Elementos"
         cursor.execute(instruccion)
@@ -753,10 +755,7 @@ class MyApp(App):
 
     def createTablePedidosAuxiliares(self):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS PedidosAuxiliares (
@@ -774,14 +773,11 @@ class MyApp(App):
     ## Crear un duplicado de PedidoAuxiliar, el cual tendra un numero de mesa correspondiente al cual estara linkeado.
     def createTablePedidosAuxiliaresConNumer(self,numeroMesa):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
 
         NuevaBase = "PedidosAuxiliares" + str(numeroMesa)+ ".db"
-        path2 = os.path.join(ABS_SCRIPT_PATH,filename,NuevaBase)
+        path2 = os.path.join(FOLDER_PATH[0], NuevaBase)
         print(path2)
         
 
@@ -800,10 +796,7 @@ class MyApp(App):
 
     def insertRowEnPedidos(self,nombreProduct, PrecioProducto, ImagenDireccion,cantidadProducto,NotasProducto):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
         instruccion = f"INSERT INTO PedidosAuxiliares VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}',{cantidadProducto},'{NotasProducto}')"
         cursor.execute(instruccion)
@@ -819,10 +812,7 @@ class MyApp(App):
     ## 6: To read all the information
     def readRowEnPedidos(self,number):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
 
         if number == 1:
@@ -850,10 +840,7 @@ class MyApp(App):
     ## 4: Search by Notes
     def searchPedido(self,number,nombreProduct,priceProduct,QuantityProduct,NoteProduct):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
 
         if number == 1:
@@ -875,10 +862,7 @@ class MyApp(App):
     ##2: To update notaProducto
     def updateFieldsPedidos(self,new_cantidadProducto,old_cantidadProducto,new_NotasProducto,old_NotasProducto):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
 
         instruccion1 = f"UPDATE PedidosAuxiliares SET cantidadProducto= ? WHERE cantidadProducto like ?"
@@ -890,10 +874,7 @@ class MyApp(App):
 
     def deleteRowPedidos(self,nameOfElement):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
         instruccion = f"DELETE FROM PedidosAuxiliares WHERE NombreProducto = '{nameOfElement}'"
         cursor.execute(instruccion)
@@ -902,10 +883,7 @@ class MyApp(App):
 
     def deleteEverythingPedidos(self):
         
-        filename = 'BasesDeDatos'
-        databaseName = 'PedidosAuxiliares.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,databaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
         instruccion = f"DELETE FROM PedidosAuxiliares"
         cursor.execute(instruccion)
@@ -917,10 +895,7 @@ class MyApp(App):
         ## La creacion de la tabla-----------------------------------------------------------------------------------------------------
     def createTableMesa(self):
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS ListaDeMesas (
@@ -933,10 +908,7 @@ class MyApp(App):
 
     def insertRowParaMesa(self,numeroMesa):
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         instruccion = f"INSERT INTO ListaDeMesas VALUES (?, ?)"
         cursor.execute(instruccion,(numeroMesa,"PedidosAuxiliares" + str(numeroMesa)))
@@ -962,10 +934,7 @@ class MyApp(App):
 
     def readRowMesa(self,numero):
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         if numero == 1:
             instruccion = f"SELECT NumeroMesa from ListaDeMesas"
@@ -1014,10 +983,7 @@ class MyApp(App):
 
     def searchMesa(self,numeroMesa):
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         instruccion = "SELECT * FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
         cursor.execute(instruccion, (numeroMesa,))
@@ -1088,15 +1054,12 @@ class MyApp(App):
     def deleteRowMesa(self,numeroMesa):
         print(numeroMesa)
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         NombrePedidos = self.searchMesa(numeroMesa)
         Nombre = NombrePedidos[0][1]
         print(Nombre)
-        path2 = os.path.join(ABS_SCRIPT_PATH,filename, str(Nombre) + ".db")
+        path2 = os.path.join(FOLDER_PATH[0], str(Nombre) + ".db")
         os.remove(path2)
         instruccion = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
         cursor.execute(instruccion, (numeroMesa,))
@@ -1105,15 +1068,12 @@ class MyApp(App):
 
     def deleteEverythingMesa(self):
         
-        filename = 'BasesDeDatos'
-        dataBaseName = 'ListaDeMesas.db'
-        path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
-        conn = sql.connect(path)
+        conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         
         NombrePedidos = self.readRowMesa(2)
         for i in NombrePedidos:
-            os.remove(str(i[0]) + ".db")
+            os.remove(os.path.join(FOLDER_PATH[0], str(i[0]) + ".db"))
 
         instruccion = f"DELETE FROM ListaDeMesas"
         cursor.execute(instruccion)
@@ -1122,20 +1082,18 @@ class MyApp(App):
 
 ##--------- Used in order to update all the changes --------
 if __name__ == '__main__':
-
-    filename1 = 'BasesDeDatos'
-    filename2 = 'Imagenes'
-    fileToCheck = '.check'
-
-    ruta1 = os.path.join(ABS_SCRIPT_PATH,filename1)
-    ruta2 = os.path.join(ABS_SCRIPT_PATH,filename2)
-    ruta3 = os.path.join(ABS_SCRIPT_PATH,fileToCheck)
-
-    if not(os.path.exists(ruta3)):
-        os.mkdir(ruta1)
-        os.mkdir(ruta2)
-        os.mkdir(ruta3)
+    
+    if sys.argv.__len__() == 1:
+        # Create the folder where the data will be stored
+        if not(os.path.exists(FOLDER_PATH[FOLDER_PATH.__len__()-1])):
+            for i in range(FOLDER_PATH.__len__()):
+                os.mkdir(FOLDER_PATH[i]) if not(os.path.exists(FOLDER_PATH[i])) else None
 
 
-    # Application().run()
-    MyApp().run()
+        # Application().run()
+        MyApp().run()
+    
+    else: 
+        if sys.argv[1] == 'reset':
+            for i in range(FOLDER_PATH.__len__()):
+                shutil.rmtree(FOLDER_PATH[i]) if os.path.exists(FOLDER_PATH[i]) else None
