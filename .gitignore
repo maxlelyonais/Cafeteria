@@ -5,10 +5,15 @@ BasesDeDatos
 .check
 Imagenes/*
 Imagenes
+Cafeteria/dist
+Cafeteria/build/Cafeteria
 
 __pycache__
+*.spec
 
 .DS_Store
 tmp
-build
+build/Cafeteria/*
+build\Cafeteria
 test
+*.zip
