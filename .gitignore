@@ -6,6 +6,7 @@ Imagenes/*
 Imagenes
 Cafeteria/dist
 Cafeteria/build/Cafeteria
+Cafeteria/build
 
 __pycache__
 *.spec
