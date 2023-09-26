@@ -33,6 +33,8 @@ from module.kivyElements import *
 # Constant Variables ----
 load_dotenv()
 
+USER_HOME_DIR = os.path.expanduser( '~' )
+
 # Get the absolute path of the python script directory
 ABS_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve()
 
@@ -431,7 +433,7 @@ class MyApp(App):
         layout = BoxLayout(orientation = 'vertical')
         file = FileChooserIconView()
         file.filters = ['*.png', '*.jpg', '*.jpeg']
-        file.path = r''
+        file.path = USER_HOME_DIR
         Select = Button(text = "Select" , size_hint = (1,0.3))
         Cancel = Button(text = "Cancel", size_hint = (1,0.3))
 
