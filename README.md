@@ -47,7 +47,7 @@ Run the program with the following command:
 wget -O Cafeteria_linux.zip --url https://github.com/maxlelyonais/Cafeteria/releases/download/$VERSION/Cafeteria_linux.zip
 ```
 
-Download the latest release from [here](https://github.com/ZhengLinLei/ftpmap/releases/)
+Download the latest release from [here](https://github.com/maxlelyonais/Cafeteria/releases/)
 
 ## Usage
 
