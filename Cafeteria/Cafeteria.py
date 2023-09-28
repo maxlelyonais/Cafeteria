@@ -33,13 +33,13 @@ from module.kivyElements import *
 # Constant Variables ----
 load_dotenv()
 
+
 USER_HOME_DIR = os.path.expanduser( '~' )
 
 # Get the absolute path of the python script directory
 ABS_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve()
 
 MAIN_KV_PATH = os.path.join(ABS_SCRIPT_PATH, 'main.kv')
-
 DDBB_FOLDER_NAME = os.getenv('DATABASE_FOLDER_NAME')
 IMAGE_FOLDER_NAME = os.getenv('IMAGE_FOLDER_NAME')
 CHECK_FOLDER_NAME = os.getenv('CHECK_FOLDER_NAME')
@@ -93,8 +93,7 @@ class MyApp(App):
         mesas_grid = self.root.get_screen('Pedidos').ids.mesas
         Pedidos_grid = self.root.get_screen('Adding').ids.TodosPedidos
         Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
-                      
-                               
+                                    
         Pedidos = Label(text = "Pedidos")
         Cantidad = Label(text = "Cantidad")
         Nota = Label(text = "Nota")
@@ -150,6 +149,87 @@ class MyApp(App):
             boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
             mesas_grid.add_widget(boton1)
 
+
+## Para actualziar cada una de las ventanas---------------------------------------------------------------------------------------
+
+    def UpdateMesa(self):
+        mesas_grid = self.root.get_screen('Pedidos').ids.mesas
+        for widget in mesas_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            mesas_grid.remove_widget(widget)
+
+        NumeroMesas = self.readRowMesa(1)
+        for i in range(len(NumeroMesas)):
+
+            boton1 = Button(text = str(NumeroMesas[i][0]))
+            boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
+            mesas_grid.add_widget(boton1)
+        
+    def UpdateElementos(self):
+
+        Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
+        nombres = self.readRowEnElementos(1)
+        imagenesDireccion = self.readRowEnElementos(3)
+        TodosLosDatos = self.readRowEnElementos(4)
+
+        for widget in Elementos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            Elementos_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+         ## Añadir los diferentes elementos en la pantalla de ELEMENTOS------------------------------------- Finalizado
+            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
+            boton1.bind(on_release = partial(self.VentanaParaEditar2,TodosLosDatos[i]))
+            Elementos_grid.add_widget(boton1)
+            
+    def UpdatePedidos(self):
+       
+        Pedidos_grid = self.root.get_screen('Adding').ids.TodosPedidos
+        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+
+        nombres = self.readRowEnPedidos(1)
+        imagenesDireccion = self.readRowEnPedidos(3)
+        Cantidad = self.readRowEnPedidos(4)
+        Nota = self.readRowEnPedidos(5)
+        TodosLosDatos = self.readRowEnPedidos(6)
+
+        for widget in Pedidos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            Pedidos_grid.remove_widget(widget)
+
+        for widget in button_grid.children[:]:
+            button_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
+            boton1.bind(on_release = partial(self.EditarPedido,TodosLosDatos[i]))
+            Cantidad1 = Label(text = str(Cantidad[i][0]))
+            Nota1 = Label(text = Nota[i][0])
+            Pedidos_grid.add_widget(boton1)
+            Pedidos_grid.add_widget(Cantidad1)
+            Pedidos_grid.add_widget(Nota1)
+
+        for i in range(len(nombres)):
+            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
+            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
+            button_grid.add_widget(boton2)
+
+    
+        Boton = self.root.get_screen('PedidoAñadir').ids.EditarPedido
+        Boton.bind(on_release = self.guardarJSONPedido)
+
+    def UpdateBotones(self):
+        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+
+        nombres = self.readRowEnElementos(1)
+        imagenesDireccion = self.readRowEnElementos(3)
+        TodosLosDatos = self.readRowEnElementos(4)
+
+        for widget in button_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            button_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+            ## Añadir los diferentos elementos en la pantalla de Pedidos----------------------------------------- Finalizado
+            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
+            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
+            button_grid.add_widget(boton2)
 ##Editar Cosas---------------------------------------------------------------------------------------------------------
 
      ## Ventana para la edicion de los elementos
@@ -513,14 +593,28 @@ class MyApp(App):
             precioElemento = self.root.get_screen('ElementoAñadir').ids.precioElemento
             imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
 
+
+
+            if(imagen.source == ''):
+                imagen.source = 'Cafe.png'
             ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
+
 
             if self.searchElemento(nombreElemento.text) == []:
 
-                self.insertRowEnElementos(
+                try:
+                    resultado = float(precioElemento.text)
+                    self.insertRowEnElementos(
                     nombreElemento.text,
-                    float(precioElemento.text) if precioElemento.text.isnumeric() else 0.00,
+                    resultado,
                     ImagenDirect)
+                except:
+                    resultado = float(precioElemento.text)
+                    self.insertRowEnElementos(
+                    nombreElemento.text,
+                    0.0,
+                    ImagenDirect)
+
             else:
                 layout = BoxLayout()
                 Mensaje = Label(text = "Elemento ya repetido")
@@ -540,9 +634,6 @@ class MyApp(App):
     ## 6: Eliminar un pedido de una Mesa
     ## 7: Eliminar toda las Mesas
     def Eliminar(self,number,nombreProducto,numeroMesa):
-       print(number)
-       print(nombreProducto)
-       print(numeroMesa)
        if number == 1:
            self.deleteRowElementos(nombreProducto)
            self.root.current = 'Elementos'
