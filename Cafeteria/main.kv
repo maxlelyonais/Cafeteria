@@ -26,6 +26,7 @@ WindowManager:
             text: "Añadir Pedido"
             font_size: 32
             on_release: 
+                app.UpdatePedidos()
                 app.root.current = "Adding"
                 root.manager.transition.direction = "left"
 
@@ -33,6 +34,7 @@ WindowManager:
             text: "Todos los pedidos"
             font_size: 32
             on_release: 
+                app.UpdateMesa()
                 app.root.current = "Pedidos"
                 root.manager.transition.direction = "left"
 
@@ -40,7 +42,7 @@ WindowManager:
             text: "Editar/Añadir Elementos"
             font_size: 32
             on_release: 
-                
+                app.UpdateElementos()
                 app.root.current = "Elementos"
                 root.manager.transition.direction = "left"
         
@@ -83,7 +85,11 @@ WindowManager:
             size_hint_y: 0.1
 
             on_release:
+                app.UpdatePedidos()
+                app.root.current = "Main"
+                app.UpdateBotones()
                 app.check_number()
+                app.Eliminar(4,0,0)
         
         Button:
 
@@ -91,6 +97,7 @@ WindowManager:
             size_hint_y: 0.1
 
             on_release:
+                app.UpdateBotones()
                 app.root.current = "AnyadirPedidos"
                 root.manager.transition.direction = "left"
 
@@ -99,7 +106,8 @@ WindowManager:
             font_size: 32
             size_hint_y: 0.1
             on_release:
-                app.deleteEverythingPedidos()
+                app.UpdatePedidos()
+                app.Eliminar(4,0,0)
                 app.root.current = "Main"
                 root.manager.transition.direction = "right"
 
@@ -138,6 +146,7 @@ WindowManager:
             size_hint_y: 0.2
             on_release:
                 app.root.current = "Main"
+                app.UpdateMesa()
                 app.Eliminar(7,0,0)
                 root.manager.transition.direction = "right"
 
@@ -177,6 +186,7 @@ WindowManager:
             font_size: 32
             size_hint_y: 0.1
             on_release:
+                app.UpdateElementos()
                 app.root.current = "ElementoAñadir"
                 root.manager.transition.direciton = "left"
 
@@ -185,13 +195,16 @@ WindowManager:
             font_size: 32
             size_hint_y: 0.1
             on_release:
+                app.UpdateElementos()
+                root.manager.transition.direction = "left"
+                app.root.current = "Main"
                 app.Eliminar(2,0,0)
 
         Button:
             text: "Menu Principal"
             font_size: 32
             size_hint_y: 0.1
-            on_release: 
+            on_release:
                 app.root.current = "Main"
                 root.manager.transition.direction = "right"
 
@@ -222,6 +235,7 @@ WindowManager:
             font_size: 32
             size_hint_y: 0.1
             on_release: 
+                app.UpdatePedidos()
                 app.root.current = "Adding"
                 root.manager.transition.direction = "right"
 
@@ -273,15 +287,17 @@ WindowManager:
             text: "AñadirElemento"
             size_hint_y: 0.2
             on_release:
+                app.UpdateElementos()
                 app.guardarElemento()
-                app.restablecer(1)
-                app.root.current = "Elementos"
+                app.root.current = "Main"
                 root.manager.transition.direction = "left"
+                app.restablecer(1)
 
         Button:
             text: "Volver"
             size_hint_y: 0.2
             on_release:
+                app.UpdateElementos()
                 app.root.current = "Elementos"
                 root.manager.transition.direction = "left"
 
@@ -356,13 +372,15 @@ WindowManager:
             text: "EditarElemento"
             size_hint_y: 0.2
             on_release:
-                app.root.current = "Elementos"
+                app.root.current = "Main"
                 root.manager.transition.direction = "left"
 
         Button:
             id: Boton4
             text: "Eliminar pedido"
             size_hint_y: 0.1
+            on_release:
+                app.UpdatePedidos()
 
 <ElPedidoParaAnyadir>:
 
@@ -436,6 +454,7 @@ WindowManager:
             on_release:
                 app.restablecer(2)
                 app.root.current = "AnyadirPedidos"
+                app.UpdateBotones()
                 root.manager.transition.direction = "left"
 
 
@@ -444,6 +463,8 @@ WindowManager:
             text: "Volver"
             size_hint_y: 0.2
             on_release:
+                app.root.current = "Adding"
+                app.UpdatePedidos()
                 app.restablecer(2)
                 root.manager.transition.direction = "left"
 
@@ -504,6 +525,7 @@ WindowManager:
             text: "Añade mas pedidos"
             size_hint_y: 0.1
             on_release:
+                app.UpdatePedidos()
                 app.root.current = "AnyadirPedidosAMesa"
 
 
@@ -542,4 +564,5 @@ WindowManager:
             size_hint_y: 0.1
             on_release: 
                 app.root.current = "NumeroMesa"
+                app.UpdateMesa()
                 root.manager.transition.direction = "right"

@@ -1,6 +1,7 @@
 import os, pathlib, sys, shutil
 import sqlite3 as sql
 from functools import partial
+import subprocess
 
 # --- dotenv module
 # @installation:   pip install python-dotenv
@@ -44,13 +45,14 @@ DDBB_FOLDER_NAME = os.getenv('DATABASE_FOLDER_NAME')
 IMAGE_FOLDER_NAME = os.getenv('IMAGE_FOLDER_NAME')
 CHECK_FOLDER_NAME = os.getenv('CHECK_FOLDER_NAME')
 
+
 # GET ABSOLUTE PATH OF ALL SUB FOLDERS
 FOLDER_PATH = [
     os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME),
     os.path.join(ABS_SCRIPT_PATH, IMAGE_FOLDER_NAME),
 
     # Last one always check folder
-    os.path.join(ABS_SCRIPT_PATH, CHECK_FOLDER_NAME)
+    os.path.join(ABS_SCRIPT_PATH, CHECK_FOLDER_NAME),
 ]
 
 # GET ABSOLUTE PATH OF ALL FILES
@@ -60,12 +62,21 @@ FILE_PATH = [
     os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('ORDER_DB_FILENAME')),
 ]
 
+# Server script using Node.js
+server = os.path.join(ABS_SCRIPT_PATH, 'Servidor', 'servidor.js')
+node_command = f'node {server}'
+
+try:
+    subprocess.Popen(node_command, shell = True)
+    
+except Exception as e:
+    print(f"Error starting Node.js server {e}")
 
 # Functions
 
 class MyApp(App):
     
-    
+    print(server)
     button_added = False
     button_pressed = False
     button_connected = False
@@ -150,6 +161,87 @@ class MyApp(App):
             boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
             mesas_grid.add_widget(boton1)
 
+## Para actualziar cada una de las ventanas---------------------------------------------------------------------------------------
+
+    def UpdateMesa(self):
+        mesas_grid = self.root.get_screen('Pedidos').ids.mesas
+        for widget in mesas_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            mesas_grid.remove_widget(widget)
+
+        NumeroMesas = self.readRowMesa(1)
+        for i in range(len(NumeroMesas)):
+            print(NumeroMesas)
+            boton1 = Button(text = str(NumeroMesas[i][0]))
+            boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
+            mesas_grid.add_widget(boton1)
+        
+    def UpdateElementos(self):
+
+        Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
+        nombres = self.readRowEnElementos(1)
+        imagenesDireccion = self.readRowEnElementos(3)
+        TodosLosDatos = self.readRowEnElementos(4)
+
+        for widget in Elementos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            Elementos_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+         ## Añadir los diferentes elementos en la pantalla de ELEMENTOS------------------------------------- Finalizado
+            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
+            boton1.bind(on_release = partial(self.VentanaParaEditar2,TodosLosDatos[i]))
+            Elementos_grid.add_widget(boton1)
+            
+    def UpdatePedidos(self):
+       
+        Pedidos_grid = self.root.get_screen('Adding').ids.TodosPedidos
+        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+
+
+        nombres = self.readRowEnPedidos(1)
+        imagenesDireccion = self.readRowEnPedidos(3)
+        Cantidad = self.readRowEnPedidos(4)
+        Nota = self.readRowEnPedidos(5)
+        TodosLosDatos = self.readRowEnPedidos(6)
+
+        for widget in Pedidos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            Pedidos_grid.remove_widget(widget)
+
+        for widget in button_grid.children[:]: 
+            button_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
+            boton1.bind(on_release = partial(self.EditarPedido,TodosLosDatos[i]))
+            Cantidad1 = Label(text = str(Cantidad[i][0]))
+            Nota1 = Label(text = Nota[i][0])
+            Pedidos_grid.add_widget(boton1)
+            Pedidos_grid.add_widget(Cantidad1)
+            Pedidos_grid.add_widget(Nota1)
+
+        for i in range(len(nombres)):
+            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
+            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
+            button_grid.add_widget(boton2)
+
+        Boton = self.root.get_screen('PedidoAñadir').ids.EditarPedido
+        Boton.bind(on_release = self.guardarJSONPedido)
+
+    def UpdateBotones(self):
+        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+
+        nombres = self.readRowEnElementos(1)
+        imagenesDireccion = self.readRowEnElementos(3)
+        TodosLosDatos = self.readRowEnElementos(4)
+
+        for widget in button_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            button_grid.remove_widget(widget)
+
+        for i in range(len(nombres)):
+            ## Añadir los diferentos elementos en la pantalla de Pedidos----------------------------------------- Finalizado
+            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
+            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
+            button_grid.add_widget(boton2)
+
 ##Editar Cosas---------------------------------------------------------------------------------------------------------
 
      ## Ventana para la edicion de los elementos
@@ -196,17 +288,21 @@ class MyApp(App):
 
     ##Cambiar al numero de Mesa------------------------------------------------------------------------------------------------
     def cambiarAMesa(self,numeroMesa,instance):
-        
         self.root.current = 'NumeroMesa'
         elementosDeLaMesa = self.root.get_screen('NumeroMesa').ids.pedidosDeLaMesa
         PedidosEnMesa = self.root.get_screen('AnyadirPedidosAMesa').ids.pedidos
 
-        if not self.button_connected:
-            Info = self.readRowEnElementos(4)
-            for i in range(len(Info)):
-                Boton2 = Button(text = str(Info[i][0]), background_normal = str(Info[i][2]))
-                Boton2.bind(on_release = partial(self.anyadirProductoEnMesa,Info[i],numeroMesa))
-                PedidosEnMesa.add_widget(Boton2)
+        for widget in elementosDeLaMesa.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            elementosDeLaMesa.remove_widget(widget)
+
+        for widget in PedidosEnMesa.children[:]:  # Create a copy of the children list to avoid modification during iteration
+            PedidosEnMesa.remove_widget(widget)
+
+        Info = self.readRowEnElementos(4)
+        for i in range(len(Info)):
+            Boton2 = Button(text = str(Info[i][0]), background_normal = str(Info[i][2]))
+            Boton2.bind(on_release = partial(self.anyadirProductoEnMesa,Info[i],numeroMesa))
+            PedidosEnMesa.add_widget(Boton2)
 
         Nombre1 = self.readRowEnPedidosEnMesa(numeroMesa,1)
         Imagen1 = self.readRowEnPedidosEnMesa(numeroMesa,3)
@@ -216,38 +312,33 @@ class MyApp(App):
         Boton = self.root.get_screen('NumeroMesa').ids.EliminarMesa
         Boton.bind(on_release = lambda instance: self.Eliminar(5,"",numeroMesa))
 
-        if not self.button_added:
+        NombreProducto = Label(text = "Nombre del Producto")
+        Cantidad = Label( text = "Cantidad")
+        Precio = Label(text = "Precio")
+        Nota = Label(text = "Notas")
+        TotalPrecio = Label(text = "Total Precio")
 
-            NombreProducto = Label(text = "Nombre del Producto")
-            Cantidad = Label( text = "Cantidad")
-            Precio = Label(text = "Precio")
-            Nota = Label(text = "Notas")
-            TotalPrecio = Label(text = "Total Precio")
+        elementosDeLaMesa.add_widget(NombreProducto)
+        elementosDeLaMesa.add_widget(Cantidad)
+        elementosDeLaMesa.add_widget(Precio)
+        elementosDeLaMesa.add_widget(Nota)
+        elementosDeLaMesa.add_widget(TotalPrecio)
 
-            elementosDeLaMesa.add_widget(NombreProducto)
-            elementosDeLaMesa.add_widget(Cantidad)
-            elementosDeLaMesa.add_widget(Precio)
-            elementosDeLaMesa.add_widget(Nota)
-            elementosDeLaMesa.add_widget(TotalPrecio)
+        for i in range(len(Nombre1)):
 
-            for i in range(len(Nombre1)):
+            boton1 = Button( text = str(Nombre1[i][0]), background_normal = Imagen1[i][0])
+            boton1.bind(on_release = partial(self.VentanaParaEditar1,numeroMesa,Nombre1[i][0]))
+            Cantidad2 = Label(text = str(Cantidad1[i][0]) )
+            Precio2 = Label(text = str(Precio1[i][0]) )
+            Notas2 = Label(text = str(Nota1[i][0]))
+            totalEnNumero = round(int(Cantidad1[i][0]) * float(Precio1[i][0]))
+            total = Label(text =str(totalEnNumero))
 
-                boton1 = Button( text = str(Nombre1[i][0]), background_normal = Imagen1[i][0])
-                boton1.bind(on_release = partial(self.VentanaParaEditar1,numeroMesa,Nombre1[i][0]))
-                Cantidad2 = Label(text = str(Cantidad1[i][0]) )
-                Precio2 = Label(text = str(Precio1[i][0]) )
-                Notas2 = Label(text = str(Nota1[i][0]))
-                totalEnNumero = round(int(Cantidad1[i][0]) * float(Precio1[i][0]))
-                total = Label(text =str(totalEnNumero))
-
-                elementosDeLaMesa.add_widget(boton1)
-                elementosDeLaMesa.add_widget(Cantidad2)
-                elementosDeLaMesa.add_widget(Precio2)
-                elementosDeLaMesa.add_widget(Notas2)
-                elementosDeLaMesa.add_widget(total)
-
-            elementosDeLaMesa.do_layout()
-            self.button_added = True
+            elementosDeLaMesa.add_widget(boton1)
+            elementosDeLaMesa.add_widget(Cantidad2)
+            elementosDeLaMesa.add_widget(Precio2)
+            elementosDeLaMesa.add_widget(Notas2)
+            elementosDeLaMesa.add_widget(total)
 
 
     def EditarPedido(self,Datos,instance):
@@ -472,7 +563,6 @@ class MyApp(App):
 
             destination_file_path = os.path.join(FOLDER_PATH[1], filename)
             
-
             with open(destination_file_path,'wb') as destination_file:
                 destination_file.write(image_data)
 
@@ -513,13 +603,22 @@ class MyApp(App):
             precioElemento = self.root.get_screen('ElementoAñadir').ids.precioElemento
             imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
 
+            if(imagen.source == ''):
+                imagen.source = 'Cafe.png'
             ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
 
             if self.searchElemento(nombreElemento.text) == []:
 
-                self.insertRowEnElementos(
+                try:
+                    resultado = float(precioElemento.text)
+                    self.insertRowEnElementos(
                     nombreElemento.text,
-                    float(precioElemento.text) if precioElemento.text.isnumeric() else 0.00,
+                    resultado,
+                    ImagenDirect)
+                except:
+                    self.insertRowEnElementos(
+                    nombreElemento.text,
+                    0.0,
                     ImagenDirect)
             else:
                 layout = BoxLayout()
@@ -545,19 +644,25 @@ class MyApp(App):
        print(numeroMesa)
        if number == 1:
            self.deleteRowElementos(nombreProducto)
+           self.UpdateElementos()
            self.root.current = 'Elementos'
        elif number == 2:
            self.deleteEverythingElementos()
+           self.UpdateElementos()
        elif number == 3:
             self.deleteRowPedidos(nombreProducto)
+            self.UpdatePedidos()
             self.root.current = 'Adding'
        elif number == 4:
             self.deleteEverythingPedidos()
+            self.UpdatePedidos()
        elif number == 5:
            self.deleteRowMesa(numeroMesa)
+           self.UpdateMesa()
            self.root.current = 'Pedidos'
        elif number == 6:
             self.deleteRowPedidoEnMesa(numeroMesa,nombreProducto)
+            self.UpdatePedidos()
             self.root.current = 'NumeroMesa'
        elif number == 7:
            self.deleteEverythingMesa()
@@ -670,7 +775,7 @@ class MyApp(App):
     def createTableElementos(self):
 
         conn = sql.connect(FILE_PATH[0])
-
+        
         cursor = conn.cursor()
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS Elementos (
@@ -721,7 +826,7 @@ class MyApp(App):
         conn = sql.connect(FILE_PATH[0])
         cursor = conn.cursor()
         instruccion = "SELECT * FROM Elementos WHERE NombreProducto LIKE ?"
-        cursor.execute(instruccion, ('%'+nombreProducto+'%',))
+        cursor.execute(instruccion, (nombreProducto,))
         datos = cursor.fetchall()
         conn.commit()
         conn.close()
@@ -785,21 +890,20 @@ class MyApp(App):
         
         conn = sql.connect(FILE_PATH[2])
         cursor = conn.cursor()
-
-        NuevaBase = "PedidosAuxiliares" + str(numeroMesa)+ ".db"
-        path2 = os.path.join(FOLDER_PATH[0], NuevaBase)
-        print(path2)
-        
-
-        instruccion1 = f"ATTACH DATABASE '{path2}' AS new_db"
-        cursor.execute(instruccion1)
-
-        instruccion2 = f"CREATE TABLE new_db.PedidosAuxiliares AS SELECT * FROM PedidosAuxiliares"
-        cursor.execute(instruccion2)
-
-        instruccion3 = f"DETACH DATABASE new_db"
-        cursor.execute(instruccion3)
-
+        NuevaBase = f"PedidosAuxiliares{numeroMesa}"
+        cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS {NuevaBase}(
+                NombreProducto TEXT,
+                PrecioProducto FLOAT,
+                ImagenDireccion TEXT,
+                CantidadProducto INTEGER,
+                NotasProducto TEXT
+            )"""
+        )
+        intruccion = f"""INSERT INTO {NuevaBase} (NombreProducto, PrecioProducto,ImagenDireccion,CantidadProducto,NotasProducto)
+        SELECT NombreProducto, PrecioProducto,ImagenDireccion,CantidadProducto,NotasProducto
+        FROM PedidosAuxiliares"""
+        cursor.execute(intruccion)
         conn.commit()
         conn.close()
         self.deleteEverythingPedidos()
@@ -900,9 +1004,9 @@ class MyApp(App):
         conn.commit()
         conn.close()
 
-    ##------------------------------------------ Treat with Mesas DataBase---------------------------------------------------------
+    ##------------------------------------------ Treat with Mesas DataBase----------------------------------------------------------------------------
 
-        ## La creacion de la tabla-----------------------------------------------------------------------------------------------------
+        ## La creacion de la tabla---------------------------------------------------------------------------------------------------------------------
     def createTableMesa(self):
         
         conn = sql.connect(FILE_PATH[1])
@@ -921,7 +1025,7 @@ class MyApp(App):
         conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         instruccion = f"INSERT INTO ListaDeMesas VALUES (?, ?)"
-        cursor.execute(instruccion,(numeroMesa,"PedidosAuxiliares" + str(numeroMesa)))
+        cursor.execute(instruccion,(numeroMesa,f"PedidosAuxiliares{numeroMesa}"))
         conn.commit()
         conn.close()
 
@@ -929,12 +1033,12 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
 
         cursor = conn.cursor()
-        instruccion = f"INSERT INTO PedidosAuxiliares VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}',{cantidadProducto},'{NotasProducto}')"
+        instruccion = f"INSERT INTO PedidosAuxiliares{numeroMesa} VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}',{cantidadProducto},'{NotasProducto}')"
         cursor.execute(instruccion)
         conn.commit()
         conn.close()
@@ -966,24 +1070,23 @@ class MyApp(App):
     ## 6: To read all the information
     def readRowEnPedidosEnMesa(self,numeroMesa,number):
         datos = self.searchMesa(numeroMesa)
-        
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
         if number == 1:
-            instruccion = f"SELECT NombreProducto from PedidosAuxiliares"
+            instruccion = f"SELECT NombreProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 2:
-            instruccion = f"SELECT PrecioProducto from PedidosAuxiliares"
+            instruccion = f"SELECT PrecioProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 3:
-            instruccion = f"SELECT ImagenDireccion from PedidosAuxiliares"
+            instruccion = f"SELECT ImagenDireccion from PedidosAuxiliares{numeroMesa}"
         elif number == 4:
-            instruccion = f"Select cantidadProducto from PedidosAuxiliares"
+            instruccion = f"Select cantidadProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 5:
-            instruccion = f"Select NotasProducto from PedidosAuxiliares"
+            instruccion = f"Select NotasProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 6:
-            instruccion = f"Select * from PedidosAuxiliares"
+            instruccion = f"Select * from PedidosAuxiliares{numeroMesa}"
 
         cursor.execute(instruccion)
         datos = cursor.fetchall()
@@ -1010,19 +1113,19 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
 
         if number == 1:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE NombreProducto = '{nombreProduct}'"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE NombreProducto = '{nombreProduct}'"
         elif number == 2:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE PrecioProducto = {priceProduct}"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE PrecioProducto = {priceProduct}"
         elif number == 3:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE cantidadProducto = {QuantityProduct}"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE cantidadProducto = {QuantityProduct}"
         elif number == 4:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE NotasProducto = '{NoteProduct}'"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE NotasProducto = '{NoteProduct}'"
 
         cursor.execute(instruccion)
         datos = cursor.fetchall()
@@ -1035,13 +1138,13 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
-        instruccion1 = f"UPDATE PedidosAuxiliares SET cantidadProducto= ? WHERE cantidadProducto like ?"
+        instruccion1 = f"UPDATE PedidosAuxiliares{numeroMesa} SET cantidadProducto= ? WHERE cantidadProducto like ?"
         cursor.execute(instruccion1,(new_cantidadProducto,old_cantidadProducto))
-        instruccion2 = f"UPDATE PedidosAuxiliares SET NotasProducto= ? WHERE NotasProducto like ?"
+        instruccion2 = f"UPDATE PedidosAuxiliares{numeroMesa} SET NotasProducto= ? WHERE NotasProducto like ?"
         cursor.execute(instruccion2,(new_NotasProducto,old_NotasProducto))
         conn.commit()
         conn.close()
@@ -1051,30 +1154,35 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
-        instruccion = f"DELETE FROM PedidosAuxiliares WHERE NombreProducto LIKE ?"
-        cursor.execute(instruccion, ('%'+nameOfElement+'%',))
+        instruccion = f"DELETE FROM PedidosAuxiliares{numeroMesa} WHERE NombreProducto LIKE ?"
+        cursor.execute(instruccion, (nameOfElement,))
         conn.commit()
         conn.close()
 
     ## Delete one of the Mesa
     def deleteRowMesa(self,numeroMesa):
-        print(numeroMesa)
         
         conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
+        conn2 = sql.connect(FILE_PATH[2])
+        cursor2 = conn2.cursor()
         NombrePedidos = self.searchMesa(numeroMesa)
-        Nombre = NombrePedidos[0][1]
-        print(Nombre)
-        path2 = os.path.join(FOLDER_PATH[0], str(Nombre) + ".db")
-        os.remove(path2)
-        instruccion = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
-        cursor.execute(instruccion, (numeroMesa,))
-        conn.commit()
-        conn.close()
+
+        if(NombrePedidos != []):
+            Nombre = NombrePedidos[0][1]
+            instruccion1 = f"DROP TABLE {Nombre}"
+            cursor2.execute(instruccion1)
+            instruccion2 = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
+            print(Nombre)
+            cursor.execute(instruccion2, (numeroMesa,))
+            conn.commit()
+            conn2.commit()
+            conn2.close()
+            conn.close()
 
     def deleteEverythingMesa(self):
         
