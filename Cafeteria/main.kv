@@ -517,6 +517,7 @@ WindowManager:
             text: "Eliminar la mesa"
             size_hint_y:0.1
             on_release:
+                app.UpdateMesa()
                 app.root.current = "Pedidos"
                 root.manager.transition.direction = "left"
 
