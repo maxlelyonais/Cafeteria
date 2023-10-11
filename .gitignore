@@ -8,7 +8,6 @@ Cafeteria/dist
 Cafeteria/build/Cafeteria
 Cafeteria/build
 node_modules/
-package-lock.json
 __pycache__
 *.spec
 
