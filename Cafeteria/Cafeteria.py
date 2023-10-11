@@ -6,6 +6,7 @@ import requests
 import json
 import http.client
 
+
 # --- dotenv module
 # @installation:   pip install python-dotenv
 # @version:        python-dotenv==1.0.0
@@ -49,13 +50,14 @@ IMAGE_FOLDER_NAME = os.getenv('IMAGE_FOLDER_NAME')
 CHECK_FOLDER_NAME = os.getenv('CHECK_FOLDER_NAME')
 CLIENT_FOLDER_NAME = os.getenv('CLIENT_FOLDER_NAME')
 
+
 # GET ABSOLUTE PATH OF ALL SUB FOLDERS
 FOLDER_PATH = [
     os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME),
     os.path.join(ABS_SCRIPT_PATH, IMAGE_FOLDER_NAME),
 
     # Last one always check folder
-    os.path.join(ABS_SCRIPT_PATH, CHECK_FOLDER_NAME)
+    os.path.join(ABS_SCRIPT_PATH, CHECK_FOLDER_NAME),
 ]
 
 # GET ABSOLUTE PATH OF ALL FILES
@@ -65,15 +67,14 @@ FILE_PATH = [
     os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('ORDER_DB_FILENAME')),
 ]
 
-#Connect to client
+
+
 
 file_path = r"C:\Users\super\OneDrive\Desktop\Cafeteria(Cliente)\Cafeteria\Cafeteria\Client\client.js"
 try:
     subprocess.Popen(["node",file_path],shell = True)
 except:
     print(f'Failed to open')
-
-
 # Functions
 
 class MyApp(App):
@@ -137,12 +138,10 @@ class MyApp(App):
             boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
             mesas_grid.add_widget(boton1)
 
-
 ## Para actualziar cada una de las ventanas---------------------------------------------------------------------------------------
 
     def UpdateMesa(self):
         pass
-        
     def UpdateElementos(self):
         pass
 
@@ -160,7 +159,7 @@ class MyApp(App):
         for widget in Pedidos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
             Pedidos_grid.remove_widget(widget)
 
-        for widget in button_grid.children[:]:
+        for widget in button_grid.children[:]: 
             button_grid.remove_widget(widget)
 
         for i in range(len(nombres)):
@@ -606,13 +605,13 @@ class MyApp(App):
 
     ##Cambiar al numero de Mesa------------------------------------------------------------------------------------------------
     def cambiarAMesa(self,numeroMesa,instance):
-        
+
+    
         datos = self.retrieve_dataPedidos(numeroMesa)
         self.retrieve_dataElementos(numeroMesa)
         self.root.current = 'NumeroMesa'
         elementosDeLaMesa = self.root.get_screen('NumeroMesa').ids.pedidosDeLaMesa
         
-
         Boton = self.root.get_screen('NumeroMesa').ids.EliminarMesa
         Boton.bind(on_release = lambda instance: self.delete_dataMesa(numeroMesa))
 
@@ -888,7 +887,6 @@ class MyApp(App):
 
                 cantidad.text = "Escribe la cantidad a desear"
                 Nota.text = "Escribe alguna nota importante"
-
     ## 1: Eliminar Elemento
     ## 2: Eliminar todos los elementos
     ## 3: Eliminar Pedido
@@ -913,9 +911,11 @@ class MyApp(App):
             self.UpdatePedidos()
        elif number == 5:
            self.deleteRowMesa(numeroMesa)
+           self.UpdateMesa()
            self.root.current = 'Pedidos'
        elif number == 6:
             self.deleteRowPedidoEnMesa(numeroMesa,nombreProducto)
+            self.UpdatePedidos()
             self.root.current = 'NumeroMesa'
        elif number == 7:
            self.deleteEverythingMesa()
@@ -1026,7 +1026,6 @@ class MyApp(App):
         self.stop()
         python = sys.executable
         os.execl(python, python, *sys.argv)
-
     ##------------------------------------------ Treat with Pedidos DataBase----------------------------------------------------
 
     def createTablePedidosAuxiliares(self):
@@ -1143,9 +1142,9 @@ class MyApp(App):
         conn.commit()
         conn.close()
 
-    ##------------------------------------------ Treat with Mesas DataBase---------------------------------------------------------
+    ##------------------------------------------ Treat with Mesas DataBase----------------------------------------------------------------------------
 
-        ## La creacion de la tabla-----------------------------------------------------------------------------------------------------
+        ## La creacion de la tabla---------------------------------------------------------------------------------------------------------------------
     def createTableMesa(self):
         
         conn = sql.connect(FILE_PATH[1])
@@ -1164,7 +1163,7 @@ class MyApp(App):
         conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         instruccion = f"INSERT INTO ListaDeMesas VALUES (?, ?)"
-        cursor.execute(instruccion,(numeroMesa,"PedidosAuxiliares" + str(numeroMesa)))
+        cursor.execute(instruccion,(numeroMesa,f"PedidosAuxiliares{numeroMesa}"))
         conn.commit()
         conn.close()
 
@@ -1172,12 +1171,12 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
 
         cursor = conn.cursor()
-        instruccion = f"INSERT INTO PedidosAuxiliares VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}',{cantidadProducto},'{NotasProducto}')"
+        instruccion = f"INSERT INTO PedidosAuxiliares{numeroMesa} VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}',{cantidadProducto},'{NotasProducto}')"
         cursor.execute(instruccion)
         conn.commit()
         conn.close()
@@ -1209,24 +1208,23 @@ class MyApp(App):
     ## 6: To read all the information
     def readRowEnPedidosEnMesa(self,numeroMesa,number):
         datos = self.searchMesa(numeroMesa)
-        
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
         if number == 1:
-            instruccion = f"SELECT NombreProducto from PedidosAuxiliares"
+            instruccion = f"SELECT NombreProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 2:
-            instruccion = f"SELECT PrecioProducto from PedidosAuxiliares"
+            instruccion = f"SELECT PrecioProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 3:
-            instruccion = f"SELECT ImagenDireccion from PedidosAuxiliares"
+            instruccion = f"SELECT ImagenDireccion from PedidosAuxiliares{numeroMesa}"
         elif number == 4:
-            instruccion = f"Select cantidadProducto from PedidosAuxiliares"
+            instruccion = f"Select cantidadProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 5:
-            instruccion = f"Select NotasProducto from PedidosAuxiliares"
+            instruccion = f"Select NotasProducto from PedidosAuxiliares{numeroMesa}"
         elif number == 6:
-            instruccion = f"Select * from PedidosAuxiliares"
+            instruccion = f"Select * from PedidosAuxiliares{numeroMesa}"
 
         cursor.execute(instruccion)
         datos = cursor.fetchall()
@@ -1253,19 +1251,19 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
 
         if number == 1:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE NombreProducto = '{nombreProduct}'"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE NombreProducto = '{nombreProduct}'"
         elif number == 2:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE PrecioProducto = {priceProduct}"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE PrecioProducto = {priceProduct}"
         elif number == 3:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE cantidadProducto = {QuantityProduct}"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE cantidadProducto = {QuantityProduct}"
         elif number == 4:
-            instruccion = f"SELECT * from PedidosAuxiliares WHERE NotasProducto = '{NoteProduct}'"
+            instruccion = f"SELECT * from PedidosAuxiliares{numeroMesa} WHERE NotasProducto = '{NoteProduct}'"
 
         cursor.execute(instruccion)
         datos = cursor.fetchall()
@@ -1278,13 +1276,13 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
-        instruccion1 = f"UPDATE PedidosAuxiliares SET cantidadProducto= ? WHERE cantidadProducto like ?"
+        instruccion1 = f"UPDATE PedidosAuxiliares{numeroMesa} SET cantidadProducto= ? WHERE cantidadProducto like ?"
         cursor.execute(instruccion1,(new_cantidadProducto,old_cantidadProducto))
-        instruccion2 = f"UPDATE PedidosAuxiliares SET NotasProducto= ? WHERE NotasProducto like ?"
+        instruccion2 = f"UPDATE PedidosAuxiliares{numeroMesa} SET NotasProducto= ? WHERE NotasProducto like ?"
         cursor.execute(instruccion2,(new_NotasProducto,old_NotasProducto))
         conn.commit()
         conn.close()
@@ -1294,12 +1292,12 @@ class MyApp(App):
         datos = self.searchMesa(numeroMesa)
         
         filename = 'BasesDeDatos'
-        dataBaseName = str(datos[0][1]) + ".db"
+        dataBaseName = "PedidosAuxiliares.db"
         path = os.path.join(ABS_SCRIPT_PATH,filename,dataBaseName)
         conn = sql.connect(path)
         cursor = conn.cursor()
-        instruccion = f"DELETE FROM PedidosAuxiliares WHERE NombreProducto LIKE ?"
-        cursor.execute(instruccion, ('%'+nameOfElement+'%',))
+        instruccion = f"DELETE FROM PedidosAuxiliares{numeroMesa} WHERE NombreProducto LIKE ?"
+        cursor.execute(instruccion, (nameOfElement,))
         conn.commit()
         conn.close()
 
@@ -1308,17 +1306,19 @@ class MyApp(App):
         
         conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
+        conn2 = sql.connect(FILE_PATH[2])
+        cursor2 = conn2.cursor()
         NombrePedidos = self.searchMesa(numeroMesa)
 
         if(NombrePedidos != []):
             Nombre = NombrePedidos[0][1]
-
             print(Nombre)
             path2 = os.path.join(FOLDER_PATH[0], str(Nombre) + ".db")
             os.remove(path2)
             instruccion = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
             cursor.execute(instruccion, (numeroMesa,))
             conn.commit()
+
             conn.close()
 
     def deleteEverythingMesa(self):

@@ -26,6 +26,7 @@ WindowManager:
             text: "Añadir Pedido"
             font_size: 32
             on_release: 
+                app.UpdatePedidos()
                 app.root.current = "Adding"
                 root.manager.transition.direction = "left"
 
@@ -85,6 +86,8 @@ WindowManager:
 
             on_release:
                 app.UpdatePedidos()
+                app.root.current = "Main"
+                app.UpdateBotones()
                 app.check_number()
                 app.Eliminar(4,0,0)
         
@@ -94,6 +97,7 @@ WindowManager:
             size_hint_y: 0.1
 
             on_release:
+
                 app.retrieve_dataElementos(0)
                 app.root.current = "AnyadirPedidos"
                 root.manager.transition.direction = "left"
@@ -201,7 +205,7 @@ WindowManager:
             text: "Menu Principal"
             font_size: 32
             size_hint_y: 0.1
-            on_release: 
+            on_release:
                 app.root.current = "Main"
                 root.manager.transition.direction = "right"
 
@@ -451,6 +455,7 @@ WindowManager:
             on_release:
                 app.restablecer(2)
                 app.root.current = "AnyadirPedidos"
+
                 app.retrieve_dataElementos(0)
                 root.manager.transition.direction = "left"
 
@@ -460,6 +465,7 @@ WindowManager:
             text: "Volver"
             size_hint_y: 0.2
             on_release:
+
                 app.root.current = ""
                 app.UpdatePedidos()
                 app.restablecer(2)
@@ -523,6 +529,7 @@ WindowManager:
             text: "Añade mas pedidos"
             size_hint_y: 0.1
             on_release:
+                app.UpdatePedidos()
                 app.root.current = "AnyadirPedidosAMesa"
                 app.retrieve_dataElementos(0)
 
