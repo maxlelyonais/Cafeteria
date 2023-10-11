@@ -1,6 +1,10 @@
 import os, pathlib, sys, shutil
 import sqlite3 as sql
 from functools import partial
+import subprocess
+import requests
+import json
+import http.client
 
 # --- dotenv module
 # @installation:   pip install python-dotenv
@@ -43,6 +47,7 @@ MAIN_KV_PATH = os.path.join(ABS_SCRIPT_PATH, 'main.kv')
 DDBB_FOLDER_NAME = os.getenv('DATABASE_FOLDER_NAME')
 IMAGE_FOLDER_NAME = os.getenv('IMAGE_FOLDER_NAME')
 CHECK_FOLDER_NAME = os.getenv('CHECK_FOLDER_NAME')
+CLIENT_FOLDER_NAME = os.getenv('CLIENT_FOLDER_NAME')
 
 # GET ABSOLUTE PATH OF ALL SUB FOLDERS
 FOLDER_PATH = [
@@ -60,17 +65,24 @@ FILE_PATH = [
     os.path.join(ABS_SCRIPT_PATH, DDBB_FOLDER_NAME, os.getenv('ORDER_DB_FILENAME')),
 ]
 
+#Connect to client
+
+file_path = r"C:\Users\super\OneDrive\Desktop\Cafeteria(Cliente)\Cafeteria\Cafeteria\Client\client.js"
+try:
+    subprocess.Popen(["node",file_path],shell = True)
+except:
+    print(f'Failed to open')
+
 
 # Functions
 
 class MyApp(App):
     
-    
+    print(CLIENT_FOLDER_NAME)
     button_added = False
     button_pressed = False
     button_connected = False
     def build(self):
-        self.createTableElementos()
         self.createTablePedidosAuxiliares()
         self.createTableMesa()
         self.root = Builder.load_file(MAIN_KV_PATH)
@@ -79,12 +91,6 @@ class MyApp(App):
         self.BotonVuelta = Button(text = "Volver", size_hint_y = 0.1)
         self.Boton2 = Button(text = "Volver", size_hint_y= 0.1)
         self.Boton4 = Button(text = "Volver", size_hint_y = 0.1)   
-
-        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos ## Take into account where are you trying to acces ##
-        mesas_grid = self.root.get_screen('Pedidos').ids.mesas
-        Pedidos_grid = self.root.get_screen('Adding').ids.TodosPedidos
-        Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
-
         return self.root
     
     def createContents(self):
@@ -101,23 +107,6 @@ class MyApp(App):
         Pedidos_grid.add_widget(Pedidos)
         Pedidos_grid.add_widget(Cantidad)
         Pedidos_grid.add_widget(Nota)
-    
-        nombres = self.readRowEnElementos(1)
-        imagenesDireccion = self.readRowEnElementos(3)
-        TodosLosDatos = self.readRowEnElementos(4)
-
-        for i in range(len(nombres)):
-
-            ## Añadir los diferentes elementos en la pantalla de ELEMENTOS------------------------------------- Finalizado
-            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
-            boton1.bind(on_release = partial(self.VentanaParaEditar2,TodosLosDatos[i]))
-            Elementos_grid.add_widget(boton1)
-
-            ## Añadir los diferentos elementos en la pantalla de Pedidos----------------------------------------- Finalizado
-
-            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
-            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
-            button_grid.add_widget(boton2)
 
     ## Añadir los diferentes Pedidos a la pantalla de Pedidos Totales----------------------------------------------- Finalizado
 
@@ -142,7 +131,6 @@ class MyApp(App):
     ## Añadir las diferentes Mesas a Todos Los Pedidos---------------------------------------------------------------------------
 
         NumeroMesas = self.readRowMesa(1)
-
         for i in range(len(NumeroMesas)):
 
             boton1 = Button(text = str(NumeroMesas[i][0]))
@@ -153,33 +141,11 @@ class MyApp(App):
 ## Para actualziar cada una de las ventanas---------------------------------------------------------------------------------------
 
     def UpdateMesa(self):
-        mesas_grid = self.root.get_screen('Pedidos').ids.mesas
-        for widget in mesas_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
-            mesas_grid.remove_widget(widget)
-
-        NumeroMesas = self.readRowMesa(1)
-        for i in range(len(NumeroMesas)):
-
-            boton1 = Button(text = str(NumeroMesas[i][0]))
-            boton1.bind(on_release = partial(self.cambiarAMesa,NumeroMesas[i][0]))
-            mesas_grid.add_widget(boton1)
+        pass
         
     def UpdateElementos(self):
+        pass
 
-        Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
-        nombres = self.readRowEnElementos(1)
-        imagenesDireccion = self.readRowEnElementos(3)
-        TodosLosDatos = self.readRowEnElementos(4)
-
-        for widget in Elementos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
-            Elementos_grid.remove_widget(widget)
-
-        for i in range(len(nombres)):
-         ## Añadir los diferentes elementos en la pantalla de ELEMENTOS------------------------------------- Finalizado
-            boton1 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0] )
-            boton1.bind(on_release = partial(self.VentanaParaEditar2,TodosLosDatos[i]))
-            Elementos_grid.add_widget(boton1)
-            
     def UpdatePedidos(self):
        
         Pedidos_grid = self.root.get_screen('Adding').ids.TodosPedidos
@@ -211,25 +177,389 @@ class MyApp(App):
             boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
             button_grid.add_widget(boton2)
 
-    
         Boton = self.root.get_screen('PedidoAñadir').ids.EditarPedido
         Boton.bind(on_release = self.guardarJSONPedido)
 
     def UpdateBotones(self):
-        button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+        pass
 
-        nombres = self.readRowEnElementos(1)
-        imagenesDireccion = self.readRowEnElementos(3)
-        TodosLosDatos = self.readRowEnElementos(4)
+## Retrieve/Send data from/To the server-------------------------------------------------------------------------------------
 
-        for widget in button_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
-            button_grid.remove_widget(widget)
+    def retrieve_dataElementos(self,numeroMesa):
+        try:
+            response = requests.get('http://localhost:3000/api/Elementos')
+            if response.status_code == 200:
 
-        for i in range(len(nombres)):
-            ## Añadir los diferentos elementos en la pantalla de Pedidos----------------------------------------- Finalizado
-            boton2 = Button(text = nombres[i][0], background_normal = imagenesDireccion[i][0])
-            boton2.bind(on_release = partial(self.AnyadirProducto,TodosLosDatos[i]))
-            button_grid.add_widget(boton2)
+                Elementos_grid = self.root.get_screen('Elementos').ids.Elementos
+                button_grid = self.root.get_screen('AnyadirPedidos').ids.pedidos
+                PedidosEnMesa = self.root.get_screen('AnyadirPedidosAMesa').ids.pedidos
+                for widget in Elementos_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+                    Elementos_grid.remove_widget(widget)
+
+                for widget in button_grid.children[:]:
+                    button_grid.remove_widget(widget)
+
+                for widget in PedidosEnMesa.children[:]:  # Create a copy of the children list to avoid modification during iteration
+                    PedidosEnMesa.remove_widget(widget)
+
+                data = response.json()
+                for i in data:
+
+                    ## Añadir los diferentes elementos en la pantalla de ELEMENTOS------------------------------------- Finalizado
+                    boton1 = Button(text = i["NombreProducto"], background_normal = i["ImagenDireccion"] )
+                    boton1.bind(on_release = partial(self.VentanaParaEditar2,i))
+                    Elementos_grid.add_widget(boton1)
+
+                    ## Añadir los diferentes elementos en la pantalla de Pedidos
+                    boton2 = Button(text = i["NombreProducto"], background_normal = i["ImagenDireccion"])
+                    boton2.bind(on_release = partial(self.AnyadirProducto,i))
+                    button_grid.add_widget(boton2)
+
+                    Boton2 = Button(text = str(i["NombreProducto"]), background_normal = str(i["ImagenDireccion"]))
+                    Boton2.bind(on_release = partial(self.anyadirProductoEnMesa,i,numeroMesa))
+                    PedidosEnMesa.add_widget(Boton2)
+
+            else:
+                print(f"HTTP Error {response.status_code}: {response.text}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Request Error: {str(e)}")
+        except ValueError as e:
+            print(f"JSON Parsing Error: {str(e)}")
+
+    def send_dataElementos(self):
+
+        try:
+            response = requests.get('http://localhost:3000/api/Elementos')
+            if response.status_code == 200:
+                data = response.json()
+            else:
+                print(f"HTTP Error {response.status_code}: {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"Request Error: {str(e)}")
+        except ValueError as e:
+            print(f"JSON Parsing Error: {str(e)}")
+            
+        def cancel(instance):
+            Repetido.dismiss()
+
+        Repetido = False
+
+        nombreElemento = self.root.get_screen('ElementoAñadir').ids.nombreElemento
+        precioElemento = self.root.get_screen('ElementoAñadir').ids.precioElemento
+        imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
+
+        if(imagen.source == ''):
+            imagen.source = 'Cafe.png'
+        ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
+
+        for i in data:
+            if nombreElemento.text == i["NombreProducto"]:
+                Repetido = True
+
+        if Repetido == False:
+
+            try:
+                resultado = float(precioElemento.text)
+                params = {
+                "NombreProducto": str(nombreElemento.text),
+                "PrecioProducto": resultado,
+                "ImagenDireccion": str(ImagenDirect)}
+            except:
+                params = {
+                "NombreProducto": str(nombreElemento.text),
+                "PrecioProducto": 0.0,
+                "ImagenDireccion": str(ImagenDirect)
+                }
+
+            response = requests.get('http://localhost:3000/api/updateElemento',params = params)
+
+            if response.status_code == 200:
+                print("Request was successful.")
+                print(response.text)
+            else:
+                print("Request failed with status code:", response.status_code)
+                print("Response content:", response.text)
+            imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
+
+            try:
+                with open(ImagenDirect, 'rb') as source_file:
+                    imagen_bits = source_file.read()
+                    files = {'imagen': (imagen.source, imagen_bits, 'application/octet-stream')}
+                
+                response = requests.post('http://localhost:3000/upload/images', files=files)
+            except Exception as e:
+                print("An error occurred:", e)
+            
+        else:
+            layout = BoxLayout()
+            Mensaje = Label(text = "Elemento ya repetido")
+            Boton1 = Button(text = "Volver")
+            layout.add_widget(Mensaje)
+            layout.add_widget(Boton1)
+                
+            Repetido = Popup(title= 'Alerta' , content = layout)
+            Boton1.bind(on_release = cancel)
+            Repetido.open()
+
+    def delete_dataElementos(self,nombreProducto):
+        params = {
+            "NombreEliminar" : nombreProducto,
+        }
+        response = requests.get('http://localhost:3000/api/deleteElemento',params = params)
+
+
+    def delete_dataAllElementos(self):
+        requests.get('http://localhost:3000/api/deleteAllElementos')
+
+    def send_dataMesa(self,number):
+        
+        conn = sql.connect(FILE_PATH[2])
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM PedidosAuxiliares')
+
+        rows = cursor.fetchall()
+        data = [
+            {
+                "id": number
+            }
+        ]
+
+        for row in rows:
+            record = {
+                "NombreProducto": row[0],
+                "PrecioProducto": row[1],
+                "ImagenDireccion": row[2],
+                "CantidadProducto": row[3],
+                "NotasProducto": row[4]
+            }
+
+            data.append(record)
+
+        json_data = json.dumps(data, indent = 4)
+        conn.close()
+        headers = {'content-type':'application/json'}
+
+        response = requests.post('http://localhost:3000/upload/Pedidos',data = json_data,headers = headers)
+
+        if response.status_code == 200:
+            print('Request was successful')
+        else:
+            print('Request failed')
+
+
+    def delete_dataMesa(self,numeroMesa):
+
+        params = {
+            "NumeroMesa": numeroMesa,
+        }
+        response = requests.get('http://localhost:3000/api/deleteMesa', params = params)
+
+    def send_onedataPedidos(self,numeroMesa,nombreElemento,precioElemento,ImagenDirect, cantidad,Notas):
+
+        try:
+            resultado = float(precioElemento)
+            params = {
+            "NumeroMesa": numeroMesa,
+            "NombreProducto": str(nombreElemento),
+            "PrecioProducto": resultado,
+            "CantidadProducto": str(cantidad),
+            "ImagenDireccion": str(ImagenDirect),
+            "NotasProducto": str(Notas)
+            }
+        except:
+            params = {
+            "NumeroMesa": numeroMesa,
+            "NombreProducto": str(nombreElemento),
+            "PrecioProducto": 0.0,
+            "CantidadProducto": str(cantidad),
+            "ImagenDireccion": str(ImagenDirect),
+            "NotasProducto": str(Notas)
+            }
+        response = requests.get('http://localhost:3000/api/addPedido', params = params)
+
+        if response.status_code == 200:
+            print('Request was successful')
+        else:
+            print('Request failed')
+        
+
+    def send_dataPedidos(self,numeroMesa,Producto,instance):
+         
+        imagen = self.root.get_screen('ElementoEditar').ids.SelectedImage
+
+        if(imagen.source == ''):
+            imagen.source = 'Cafe.png'
+        ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
+
+        CantidadIntroducir = self.root.get_screen('ElementoEditar').ids.Cantidad2  
+        NotaIntroducir = self.root.get_screen('ElementoEditar').ids.Detalles2
+        nombre = self.root.get_screen('ElementoEditar').ids.nombreAEditar
+        precio = self.root.get_screen('ElementoEditar').ids.precioAEditar
+
+        try:
+            resultado = float(precio.text)
+            params = {
+            "NombrePrevio": str(Producto["NombreProducto"]),
+            "NumeroMesa": numeroMesa,
+            "NombreProducto": str(nombre.text),
+            "PrecioProducto": resultado,
+            "CantidadProducto": str(CantidadIntroducir.text),
+            "ImagenDireccion": str(ImagenDirect),
+            "NotasProducto": str(NotaIntroducir.text)
+            }
+        except:
+            params = {
+            "NombrePrevio": str(Producto["NombreProducto"]),
+            "NumeroMesa": numeroMesa,
+            "NombreProducto": str(nombre.text),
+            "PrecioProducto": 0.0,
+            "CantidadProducto": str(CantidadIntroducir.text),
+            "ImagenDireccion": str(ImagenDirect),
+            "NotasProducto": str(NotaIntroducir.text)
+            }
+        response = requests.get('http://localhost:3000/api/editPedido', params = params)
+
+        if response.status_code == 200:
+            print('Request was successful')
+        else:
+            print('Request failed')
+
+    def delete_dataPedidos(self,numeroMesa,NombreProducto):
+        params = {
+
+            "NumeroMesa": numeroMesa,
+            "NombreProducto": NombreProducto
+        }
+
+        response = requests.get('http://localhost:3000/api/deletePedido', params = params)
+
+    def send_editElemento(self,nombrePrevio,instance):
+        try:
+            response = requests.get('http://localhost:3000/api/Elementos')
+            if response.status_code == 200:
+                data = response.json()
+            else:
+                print(f"HTTP Error {response.status_code}: {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"Request Error: {str(e)}")
+        except ValueError as e:
+            print(f"JSON Parsing Error: {str(e)}")
+            
+        def cancel(instance):
+            Repetido.dismiss()
+
+        Repetido = False
+
+        imagen = self.root.get_screen('ElementoEditar').ids.SelectedImage
+        nombreElemento = self.root.get_screen('ElementoEditar').ids.nombreAEditar
+        precioElemento = self.root.get_screen('ElementoEditar').ids.precioAEditar
+
+        if(imagen.source == ''):
+            imagen.source = 'Cafe.png'
+        ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
+
+        for i in data:
+            if nombreElemento.text == i["NombreProducto"]:
+                Repetido = True
+
+        if Repetido == False:
+
+            try:
+                resultado = float(precioElemento.text)
+                params = {
+                "NombrePrevio": str(nombrePrevio),
+                "NombreProducto": str(nombreElemento.text),
+                "PrecioProducto": resultado,
+                "ImagenDireccion": str(ImagenDirect)}
+            except:
+                params = {
+                "NombrePrevio": str(nombrePrevio),
+                "NombreProducto": str(nombreElemento.text),
+                "PrecioProducto": 0.0,
+                "ImagenDireccion": str(ImagenDirect)
+                }
+
+            response = requests.get('http://localhost:3000/api/editElemento',params = params)
+            imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
+
+            try:
+                with open(ImagenDirect, 'rb') as source_file:
+                    imagen_bits = source_file.read()
+                    files = {'imagen': (imagen.source, imagen_bits, 'application/octet-stream')}
+                
+                response = requests.post('http://localhost:3000/upload/images', files=files)
+            except Exception as e:
+                print("An error occurred:", e)
+            
+        else:
+            layout = BoxLayout()
+            Mensaje = Label(text = "Elemento ya repetido")
+            Boton1 = Button(text = "Volver")
+            layout.add_widget(Mensaje)
+            layout.add_widget(Boton1)
+                
+            Repetido = Popup(title= 'Alerta' , content = layout)
+            Boton1.bind(on_release = cancel)
+            Repetido.open()
+
+    def delete_allMesa(self):
+        requests.get('http://localhost:3000/api/deleteAllMesa')
+
+    def retrieve_dataPedidos(self,numeroMesa):
+        try:
+            params =[
+                {
+            "NumeroMesa": numeroMesa
+                },
+            ]
+
+            response = requests.post('http://localhost:3000/api/Pedidos', json = params)
+
+            if response.status_code == 200:
+                result_data = response.json()
+                print(result_data)
+                return result_data
+            else:
+                print(f"HTTP Error {response.status_code}: {response.text}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Request Error: {str(e)}")
+        except ValueError as e:
+            print(f"JSON Parsing Error: {str(e)}")
+
+    def retrieve_dataMesas(self):
+        try:
+            response = requests.get('http://localhost:3000/api/Mesas')
+
+            mesas_grid = self.root.get_screen('Pedidos').ids.mesas
+            for widget in mesas_grid.children[:]:  # Create a copy of the children list to avoid modification during iteration
+                mesas_grid.remove_widget(widget)
+
+            for i in response.json():
+                boton1 = Button(text = str(i["NumeroMesa"]))
+                boton1.bind(on_release = partial(self.cambiarAMesa,i["NumeroMesa"]))
+                mesas_grid.add_widget(boton1)
+
+        except requests.exceptions.RequestException as e:
+            print(f"Request Error: {str(e)}")
+        except ValueError as e:
+            print(f"JSON Parsing Error: {str(e)}")
+
+    def retrieve_imagenes(self,imageName):
+        try:
+            response = requests.get(f'http://localhost:3000/download/{imageName}')
+
+            if response.status_code == 200:
+                PATH = os.path.join(FOLDER_PATH[1],imageName)
+                with open(PATH, 'wb') as f:
+                    f.write(response.content)
+            else:
+                print('Error')
+        except requests.exceptions.RequestException as req_err:
+            print(f'Request Error: {req_err}')
+
 ##Editar Cosas---------------------------------------------------------------------------------------------------------
 
      ## Ventana para la edicion de los elementos
@@ -262,39 +592,29 @@ class MyApp(App):
             Ventana.add_widget(self.Boton3)
             self.button_pressed = True
 
-        precio.text = str(TodosLosDatos[1])
-        imagen.source = TodosLosDatos[2]
-        nombre.text = TodosLosDatos[0]
+        precio.text = str(TodosLosDatos["PrecioProducto"])
+        imagen.source = TodosLosDatos["ImagenDireccion"]
+        nombre.text = TodosLosDatos["NombreProducto"]
 
         ## Boton3 Es para la eliminacion de un Elemento
-        ## Boton2 Es para la edicion de un Elmeento
+        ## Boton2 Es para la edicion de un Elmento
         ## Boton4 Es para la vuelta a la pagina anterior
-        self.Boton3.bind(on_release = partial(self.Eliminar,1,TodosLosDatos[0]))
+        self.Boton3.bind(on_release = partial(self.Eliminar,1,TodosLosDatos["NombreProducto"]))
         button2 = self.root.get_screen('ElementoEditar').ids.EditarElementos
-        button2.bind(on_release = partial(self.EditarElementos,TodosLosDatos[0],str(TodosLosDatos[1]),TodosLosDatos[2]))
+        button2.bind(on_release = partial(self.send_editElemento,TodosLosDatos["NombreProducto"]))
 
 
     ##Cambiar al numero de Mesa------------------------------------------------------------------------------------------------
     def cambiarAMesa(self,numeroMesa,instance):
         
+        datos = self.retrieve_dataPedidos(numeroMesa)
+        self.retrieve_dataElementos(numeroMesa)
         self.root.current = 'NumeroMesa'
         elementosDeLaMesa = self.root.get_screen('NumeroMesa').ids.pedidosDeLaMesa
-        PedidosEnMesa = self.root.get_screen('AnyadirPedidosAMesa').ids.pedidos
+        
 
-        if not self.button_connected:
-            Info = self.readRowEnElementos(4)
-            for i in range(len(Info)):
-                Boton2 = Button(text = str(Info[i][0]), background_normal = str(Info[i][2]))
-                Boton2.bind(on_release = partial(self.anyadirProductoEnMesa,Info[i],numeroMesa))
-                PedidosEnMesa.add_widget(Boton2)
-
-        Nombre1 = self.readRowEnPedidosEnMesa(numeroMesa,1)
-        Imagen1 = self.readRowEnPedidosEnMesa(numeroMesa,3)
-        Cantidad1 = self.readRowEnPedidosEnMesa(numeroMesa,4)
-        Precio1 = self.readRowEnPedidosEnMesa(numeroMesa,2)
-        Nota1 = self.readRowEnPedidosEnMesa(numeroMesa,5)
         Boton = self.root.get_screen('NumeroMesa').ids.EliminarMesa
-        Boton.bind(on_release = lambda instance: self.Eliminar(5,"",numeroMesa))
+        Boton.bind(on_release = lambda instance: self.delete_dataMesa(numeroMesa))
 
         if not self.button_added:
 
@@ -310,14 +630,14 @@ class MyApp(App):
             elementosDeLaMesa.add_widget(Nota)
             elementosDeLaMesa.add_widget(TotalPrecio)
 
-            for i in range(len(Nombre1)):
+            for i in datos:
 
-                boton1 = Button( text = str(Nombre1[i][0]), background_normal = Imagen1[i][0])
-                boton1.bind(on_release = partial(self.VentanaParaEditar1,numeroMesa,Nombre1[i][0]))
-                Cantidad2 = Label(text = str(Cantidad1[i][0]) )
-                Precio2 = Label(text = str(Precio1[i][0]) )
-                Notas2 = Label(text = str(Nota1[i][0]))
-                totalEnNumero = round(int(Cantidad1[i][0]) * float(Precio1[i][0]))
+                boton1 = Button( text = str(i["NombreProducto"]), background_normal = str(i["ImagenDireccion"]))
+                boton1.bind(on_release = partial(self.VentanaParaEditar1,numeroMesa,i["NombreProducto"],i))
+                Cantidad2 = Label(text = str(i["CantidadProducto"])) 
+                Precio2 = Label(text = str(i["PrecioProducto"])) 
+                Notas2 = Label(text = str(i["NotasProducto"]))
+                totalEnNumero = round(i["PrecioProducto"] * i["CantidadProducto"])
                 total = Label(text =str(totalEnNumero))
 
                 elementosDeLaMesa.add_widget(boton1)
@@ -360,7 +680,7 @@ class MyApp(App):
         Boton.bind( on_release = partial(self.EditarPedidos,str(Datos[3]),Datos[4]))
         BotonEliminar.bind(on_release = partial(self.Eliminar,3,Datos[0]))
         Ventana.do_layout()
-    ## Calcular el Precio total que se obtiene-------------------------------------------------------------------------------------
+    ## Calcular el Precio total que se obtiene----------------------------------------------------------------------------------------------------------------------
 
     def calcularElTotal(self):
 
@@ -407,7 +727,7 @@ class MyApp(App):
         self.updateFieldsPedidos(cantidad.text,old_cantidad,Notas.text,old_notas)
 
     ##Ventana para la edicion de los pedidos de una Mesa
-    def VentanaParaEditar1(self,numeroMesa,Nombre,instance):
+    def VentanaParaEditar1(self,numeroMesa,Nombre,TodosLosDatos,instance):
         self.root.current = 'ElementoEditar'
         Ventana = self.root.get_screen('ElementoEditar').ids.VentanaParaEditar
         CantidadTexto = self.root.get_screen('ElementoEditar').ids.Cantidad1
@@ -415,17 +735,16 @@ class MyApp(App):
         NotaTexto = self.root.get_screen('ElementoEditar').ids.Detalles1
         NotaIntroducir = self.root.get_screen('ElementoEditar').ids.Detalles2
         Boton4 = self.root.get_screen('ElementoEditar').ids.Boton4
-        Info = self.searchPedidoEnMesa(numeroMesa,1,Nombre,0,0,"")
         
         imagen = self.root.get_screen('ElementoEditar').ids.SelectedImage
         nombre = self.root.get_screen('ElementoEditar').ids.nombreAEditar
         precio = self.root.get_screen('ElementoEditar').ids.precioAEditar
 
-        imagen.source = Info[0][2]
-        nombre.text = Info[0][0]
-        precio.text = str(Info[0][1])
-        CantidadIntroducir.text = str(Info[0][3])
-        NotaIntroducir.text = Info[0][4]
+        imagen.source = TodosLosDatos["ImagenDireccion"]
+        nombre.text = TodosLosDatos["NombreProducto"]
+        precio.text = str(TodosLosDatos["PrecioProducto"])
+        CantidadIntroducir.text = str(TodosLosDatos["CantidadProducto"])
+        NotaIntroducir.text = TodosLosDatos["NotasProducto"]
         precio.readonly = True
         nombre.readonly = True
 
@@ -444,39 +763,27 @@ class MyApp(App):
             Ventana.remove_widget(self.Boton3)
             self.button_pressed = False
 
-        Boton4.bind(on_release = lambda instance: self.Eliminar(6,Info[0][0],numeroMesa))
+        Boton4.bind(on_release = lambda instance: self.delete_dataPedidos(numeroMesa,TodosLosDatos["NombreProducto"]))
         self.Boton2.bind(on_release= partial(self.cambiarVentana2))
         button2 = self.root.get_screen('ElementoEditar').ids.EditarElementos
-        button2.bind(on_release = partial(self.EditarENJSONPedidosEnMesa,numeroMesa,Info[0][3],Info[0][4]))
+        button2.bind(on_release = partial(self.send_dataPedidos,numeroMesa,TodosLosDatos))
     
     def EditarENJSONPedidosEnMesa(self,numeroMesa,old_cantidad,Old_Nota,instance):
         CantidadIntroducir = self.root.get_screen('ElementoEditar').ids.Cantidad2
         NotaIntroducir = self.root.get_screen('ElementoEditar').ids.Detalles2
         self.updateFieldsPedidosEnMesa(numeroMesa,CantidadIntroducir.text,old_cantidad,NotaIntroducir.text,Old_Nota)
 
-    ## Editar los elementos------------------------------------------------------------------------ Finalizado
-    def EditarElementos(self,oldName,oldPrice,oldImage,instance):
-
-        imagen = self.root.get_screen('ElementoEditar').ids.SelectedImage
-        nombre = self.root.get_screen('ElementoEditar').ids.nombreAEditar
-        precio = self.root.get_screen('ElementoEditar').ids.precioAEditar
-
-        NewName = nombre.text
-        NewPrice = precio.text
-        NewImage = imagen.source
-        self.updateFieldsElementos(NewName,NewPrice,NewImage,oldName,oldPrice,oldImage)
 
  ## Hacer que aparezca el nombre, el precio, la foto y despues se guardara lo que se ha escrito en cada uno de los bloques´-------- Finalizado
     def AnyadirProducto(self,Datos,instance):
         self.root.current = 'PedidoAñadir'
-
         imagen = self.root.get_screen('PedidoAñadir').ids.SelectedImage
         nombre = self.root.get_screen('PedidoAñadir').ids.nombreElemento
         precio = self.root.get_screen('PedidoAñadir').ids.PrecioElemento
 
-        imagen.source = Datos[2]
-        nombre.text = Datos[0]
-        precio.text = str(Datos[1])
+        imagen.source = Datos["ImagenDireccion"]
+        nombre.text = Datos["NombreProducto"]
+        precio.text = str(Datos["PrecioProducto"])
 
 ## Guardar un pedido antes de agregarlo en una Mesa
     def guardarJSONPedido(self,instance):
@@ -552,7 +859,6 @@ class MyApp(App):
 
             destination_file_path = os.path.join(FOLDER_PATH[1], filename)
             
-
             with open(destination_file_path,'wb') as destination_file:
                 destination_file.write(image_data)
 
@@ -583,49 +889,6 @@ class MyApp(App):
                 cantidad.text = "Escribe la cantidad a desear"
                 Nota.text = "Escribe alguna nota importante"
 
-    ## Guardar un Elemento a la base de datos------------------------------------------------------------ Finalizado
-    def guardarElemento(self):
-            
-            def cancel(instance):
-                Repetido.dismiss()
-
-            nombreElemento = self.root.get_screen('ElementoAñadir').ids.nombreElemento
-            precioElemento = self.root.get_screen('ElementoAñadir').ids.precioElemento
-            imagen = self.root.get_screen('ElementoAñadir').ids.SelectedImage
-
-
-
-            if(imagen.source == ''):
-                imagen.source = 'Cafe.png'
-            ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
-
-
-            if self.searchElemento(nombreElemento.text) == []:
-
-                try:
-                    resultado = float(precioElemento.text)
-                    self.insertRowEnElementos(
-                    nombreElemento.text,
-                    resultado,
-                    ImagenDirect)
-                except:
-                    resultado = float(precioElemento.text)
-                    self.insertRowEnElementos(
-                    nombreElemento.text,
-                    0.0,
-                    ImagenDirect)
-
-            else:
-                layout = BoxLayout()
-                Mensaje = Label(text = "Elemento ya repetido")
-                Boton1 = Button(text = "Volver")
-                layout.add_widget(Mensaje)
-                layout.add_widget(Boton1)
-                
-                Repetido = Popup(title= 'Alerta' , content = layout)
-                Boton1.bind(on_release = cancel)
-                Repetido.open()
-
     ## 1: Eliminar Elemento
     ## 2: Eliminar todos los elementos
     ## 3: Eliminar Pedido
@@ -635,15 +898,19 @@ class MyApp(App):
     ## 7: Eliminar toda las Mesas
     def Eliminar(self,number,nombreProducto,numeroMesa):
        if number == 1:
-           self.deleteRowElementos(nombreProducto)
+           self.delete_dataElementos(nombreProducto)
+           self.UpdateElementos()
            self.root.current = 'Elementos'
        elif number == 2:
            self.deleteEverythingElementos()
+           self.UpdateElementos()
        elif number == 3:
             self.deleteRowPedidos(nombreProducto)
+            self.UpdatePedidos()
             self.root.current = 'Adding'
        elif number == 4:
             self.deleteEverythingPedidos()
+            self.UpdatePedidos()
        elif number == 5:
            self.deleteRowMesa(numeroMesa)
            self.root.current = 'Pedidos'
@@ -659,12 +926,11 @@ class MyApp(App):
         nombre = self.root.get_screen('PedidoAñadir').ids.nombreElemento
         precio = self.root.get_screen('PedidoAñadir').ids.PrecioElemento
 
-        imagen.source = info[2]
-        nombre.text =  str(info[0])
-        precio.text = str(info[1])
+        imagen.source = info["ImagenDireccion"]
+        nombre.text =  str(info["NombreProducto"])
+        precio.text = str(info["PrecioProducto"])
 
         Boton = self.root.get_screen('PedidoAñadir').ids.EditarPedido
-
         Boton.bind(on_release = partial(self.GuardarElNuevoProducto,numeroMesa))
 
     def GuardarElNuevoProducto(self,numeroMesa,instance):
@@ -675,14 +941,20 @@ class MyApp(App):
         cantidad = self.root.get_screen('PedidoAñadir').ids.CantidadElemento
         Notas = self.root.get_screen('PedidoAñadir').ids.DetalleACompartir
 
-
         ImagenDirect = os.path.join(FOLDER_PATH[1], os.path.basename(imagen.source))
+
+        Pedidos = self.retrieve_dataPedidos(numeroMesa)
+        Repetido = False
 
         def CerrarVentana(instance):
             Repetido.dismiss()
         
-        if self.searchPedidoEnMesa(numeroMesa,1,nombreElemento.text,0,0,"") == []:
-            self.insertRowParaPedidoEnMesa(numeroMesa,nombreElemento.text,precioElemento.text,ImagenDirect, 
+        for i in Pedidos:
+            if i["NombreProducto"] == nombreElemento:
+                Repetido = True
+
+        if Repetido == False:
+            self.send_onedataPedidos(numeroMesa,nombreElemento.text,precioElemento.text,ImagenDirect, 
                                            cantidad.text if cantidad.text.isnumeric() else 1,
                                            Notas.text)
         else:
@@ -721,8 +993,7 @@ class MyApp(App):
             Repetido.dismiss()
 
         if self.searchMesa(numero) == []:
-            self.insertRowParaMesa(numero)
-            self.createTablePedidosAuxiliaresConNumer(numero)
+            self.send_dataMesa(numero)
         else:
             layout = BoxLayout()
             Mensaje = Label(text = "Elemento ya repetido")
@@ -737,6 +1008,7 @@ class MyApp(App):
 ##------------------------------------------------------------- Cambiar las ventanas de manera manual------------------------------
     def cambiarVentana1(self,instance):
         self.root.current = 'AnyadirPedidosAMesa'
+
     
     def cambiarVentana2(self,instance):
 
@@ -754,103 +1026,6 @@ class MyApp(App):
         self.stop()
         python = sys.executable
         os.execl(python, python, *sys.argv)
-
-##----------------------------------------------------------------------------------------------------------------------------
-
-    ##---------------------------------------Treat with Elementos DataBase--------------------------------------------------------
-    def createTableElementos(self):
-
-        conn = sql.connect(FILE_PATH[0])
-
-        cursor = conn.cursor()
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS Elementos (
-                NombreProducto text,
-                PrecioProducto float,
-                ImagenDireccion text
-            )"""
-        )
-
-        conn.commit()
-        conn.close()
-
-    def insertRowEnElementos(self,nombreProduct, PrecioProducto, ImagenDireccion):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-        instruccion = f"INSERT INTO Elementos VALUES ('{nombreProduct}', {PrecioProducto}, '{ImagenDireccion}')"
-        cursor.execute(instruccion)
-
-        conn.commit()
-        conn.close()
-
-    ## 1: To read nombreProduct
-    ## 2: To read PrecioProduct
-    ## 3: To read ImagenDireccion
-    ## 4: To read all the information
-    def readRowEnElementos(self,number):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-
-        if number == 1:
-            instruccion = f"SELECT NombreProducto from Elementos "
-        elif number == 2:
-            instruccion = f"SELECT PrecioProducto from Elementos "
-        elif number == 3:
-            instruccion = f"SELECT ImagenDireccion from Elementos"
-        elif number == 4:
-            instruccion = f"SELECT * from Elementos"
-        cursor.execute(instruccion)
-        datos = cursor.fetchall()
-        conn.commit()
-        conn.close()
-        return datos
-
-    def searchElemento(self,nombreProducto):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-        instruccion = "SELECT * FROM Elementos WHERE NombreProducto LIKE ?"
-        cursor.execute(instruccion, ('%'+nombreProducto+'%',))
-        datos = cursor.fetchall()
-        conn.commit()
-        conn.close()
-        return datos
-        
-    ##1: To update name
-    ##2: To update price
-    def updateFieldsElementos(self,new_name,new_price,new_imageDirection,old_name,old_price,old_imageDirection):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-        instruccion1 = f"UPDATE Elementos SET NombreProducto= ? WHERE NombreProducto like ?"
-        cursor.execute(instruccion1,(new_name,old_name))
-        instruccion2 = f"UPDATE Elementos SET PrecioProducto= ? WHERE PrecioProducto like ?"
-        cursor.execute(instruccion2,(new_price,old_price)),
-        instruccion3 = f"UPDATE Elementos SET ImagenDireccion= ? WHERE ImagenDireccion like ?"
-        cursor.execute(instruccion3,(new_imageDirection,old_imageDirection))
-        conn.commit()
-        conn.close()
-
-    ## We delete through the name
-    def deleteRowElementos(self,nameOfElement):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-        instruccion = f"DELETE FROM Elementos WHERE NombreProducto LIKE ?"
-        cursor.execute(instruccion, ('%'+nameOfElement+'%',))
-        conn.commit()
-        conn.close()
-
-    def deleteEverythingElementos(self):
-        
-        conn = sql.connect(FILE_PATH[0])
-        cursor = conn.cursor()
-        instruccion = f"DELETE FROM Elementos"
-        cursor.execute(instruccion)
-        conn.commit()
-        conn.close()
 
     ##------------------------------------------ Treat with Pedidos DataBase----------------------------------------------------
 
@@ -871,29 +1046,6 @@ class MyApp(App):
 
         conn.commit()
         conn.close()
-    ## Crear un duplicado de PedidoAuxiliar, el cual tendra un numero de mesa correspondiente al cual estara linkeado.
-    def createTablePedidosAuxiliaresConNumer(self,numeroMesa):
-        
-        conn = sql.connect(FILE_PATH[2])
-        cursor = conn.cursor()
-
-        NuevaBase = "PedidosAuxiliares" + str(numeroMesa)+ ".db"
-        path2 = os.path.join(FOLDER_PATH[0], NuevaBase)
-        print(path2)
-        
-
-        instruccion1 = f"ATTACH DATABASE '{path2}' AS new_db"
-        cursor.execute(instruccion1)
-
-        instruccion2 = f"CREATE TABLE new_db.PedidosAuxiliares AS SELECT * FROM PedidosAuxiliares"
-        cursor.execute(instruccion2)
-
-        instruccion3 = f"DETACH DATABASE new_db"
-        cursor.execute(instruccion3)
-
-        conn.commit()
-        conn.close()
-        self.deleteEverythingPedidos()
 
     def insertRowEnPedidos(self,nombreProduct, PrecioProducto, ImagenDireccion,cantidadProducto,NotasProducto):
         
@@ -1153,19 +1305,21 @@ class MyApp(App):
 
     ## Delete one of the Mesa
     def deleteRowMesa(self,numeroMesa):
-        print(numeroMesa)
         
         conn = sql.connect(FILE_PATH[1])
         cursor = conn.cursor()
         NombrePedidos = self.searchMesa(numeroMesa)
-        Nombre = NombrePedidos[0][1]
-        print(Nombre)
-        path2 = os.path.join(FOLDER_PATH[0], str(Nombre) + ".db")
-        os.remove(path2)
-        instruccion = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
-        cursor.execute(instruccion, (numeroMesa,))
-        conn.commit()
-        conn.close()
+
+        if(NombrePedidos != []):
+            Nombre = NombrePedidos[0][1]
+
+            print(Nombre)
+            path2 = os.path.join(FOLDER_PATH[0], str(Nombre) + ".db")
+            os.remove(path2)
+            instruccion = f"DELETE FROM ListaDeMesas WHERE NumeroMesa LIKE ?"
+            cursor.execute(instruccion, (numeroMesa,))
+            conn.commit()
+            conn.close()
 
     def deleteEverythingMesa(self):
         

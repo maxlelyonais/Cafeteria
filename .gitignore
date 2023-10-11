@@ -7,6 +7,9 @@ Imagenes
 Cafeteria/dist
 Cafeteria/build/Cafeteria
 Cafeteria/build
+Cafeteria(Cliente)/node_modules/
+Cafeteria(Cliente)/package-lock.json
+Cafeteria/Client/node_modules
 
 __pycache__
 *.spec
